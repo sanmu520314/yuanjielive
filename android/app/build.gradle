@@ -1,0 +1,79 @@
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader('UTF-8') { reader ->
+        localProperties.load(reader)
+    }
+}
+
+def flutterRoot = localProperties.getProperty('flutter.sdk')
+if (flutterRoot == null) {
+    throw new GradleException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
+}
+
+def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
+if (flutterVersionCode == null) {
+    flutterVersionCode = '1'
+}
+
+def flutterVersionName = localProperties.getProperty('flutter.versionName')
+if (flutterVersionName == null) {
+    flutterVersionName = '1.0'
+}
+
+
+apply plugin: 'com.android.application'
+apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
+
+android {
+    compileSdkVersion 31
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    defaultConfig {
+        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
+        applicationId "tv.yunbiao.yuanjielive"
+        minSdkVersion 21
+        targetSdkVersion 31
+        versionCode flutterVersionCode.toInteger()
+        versionName flutterVersionName
+    }
+
+    signingConfigs {
+//        config {
+//            keyAlias 'yunbiao'
+//            keyPassword 'yb123456'
+//            storeFile file('G:\\flutter_project_2026\\yuanjielive\\android\\new_release.jks')
+//            storePassword 'yb123456'
+//            v1SigningEnabled true
+//            v2SigningEnabled true
+//        }
+        config {
+            keyAlias 'leadlive'
+            keyPassword '123456'
+            storeFile file('G:\\flutter_project_2026\\yuanjielive\\android\\lead_live.jks')
+            storePassword '123456'
+        }
+    }
+    buildTypes {
+        release {
+//            minifyEnabled false
+//            shrinkResources false  // 明确禁用资源压缩
+            signingConfig signingConfigs.config
+        }
+
+//        debug {
+//            minifyEnabled false
+//            shrinkResources false  // 明确禁用资源压缩
+//            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+//            signingConfig signingConfigs.config
+//        }
+    }
+}
+
+flutter {
+    source '../..'
+}
