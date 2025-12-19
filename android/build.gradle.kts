@@ -26,7 +26,29 @@ allprojects {
         maven { url = uri("https://maven.aliyun.com/nexus/content/groups/public") }
         maven { url = uri("https://maven.aliyun.com/nexus/content/repositories/releases") }
     }
+
 }
+
+subprojects {
+    afterEvaluate {
+        val p = this
+        // 检查该子项目（插件）是否有 android 配置块
+        if (p.extensions.findByName("android") != null) {
+            val android = p.extensions.getByName("android") as com.android.build.gradle.BaseExtension
+
+            // 1. 针对特定的直播插件强制注入 namespace
+            if (p.name == "flutter_livepush_plugin") {
+                android.namespace = "com.alivc.livepush"
+            }
+
+            // 2. 通用兜底：如果其他插件也没有 namespace，则根据 project 路径自动生成一个
+            if (android.namespace == null) {
+                android.namespace = p.group.toString().ifEmpty { "temp.namespace.${p.name}" }
+            }
+        }
+    }
+}
+
 
 val newBuildDir: Directory =
     rootProject.layout.buildDirectory
