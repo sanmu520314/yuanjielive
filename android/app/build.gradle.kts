@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "tv.yunbiao.yuanjielive"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 34
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -16,7 +16,7 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
+        jvmTarget = "17"
     }
 
     defaultConfig {
@@ -25,22 +25,27 @@ android {
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        targetSdk = 34
+        versionCode = 1
+        versionName = "1.0.0"
     }
 
     signingConfigs {
-        config {
-            keyAlias 'leadlive'
-            keyPassword '123456'
-            storeFile file('G:\\flutter_project_2026\\yuanjielive\\android\\lead_live.jks')
-            storePassword '123456'
+        create("config") { // 注意这里使用 create("config")
+            keyAlias = "leadlive"
+            keyPassword = "123456"
+            storeFile = file("G:\\flutter_project_2026\\yuanjielive\\android\\lead_live.jks")
+            storePassword = "123456"
         }
+
     }
     buildTypes {
-        release {
-            signingConfig signingConfigs.config
+        getByName("release") {
+            // 使用之前创建的 config
+            signingConfig = signingConfigs.getByName("config")
+        }
+        getByName("debug") {
+            signingConfig = signingConfigs.getByName("config")
         }
     }
 }
