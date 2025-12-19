@@ -43,5 +43,9 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>com.aliyun.alivc_license.licensekey</key>
+  	<string>CPSNY2QLG25ViBkwz8856ba8126b241e99e80000eae1f622b</string>
+    <key>com.aliyun.alivc_license.licensefile</key>
+    <string>assets/cert/release.crt</string>
 </dict>
 </plist>
