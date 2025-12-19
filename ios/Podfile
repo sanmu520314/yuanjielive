@@ -25,20 +25,19 @@ post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
 
-    # 2. 针对主项目 Runner 的修复：强制添加插件头文件搜索路径
-    if target.name == 'Runner'
+    # 针对阿里直播插件的特殊处理
+    if target.name.include?('flutter_livepush_plugin')
       target.build_configurations.each do |config|
-        # 允许项目寻找所有 Pods 目录下的头文件，解决 Module not found
+        # 强制允许非模块化包含，防止 "Module not found"
         config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+        # 定义为模块
+        config.build_settings['DEFINES_MODULE'] = 'YES'
       end
     end
 
-    # 3. 针对特定的直播插件强制开启 Module 定义
-    if target.name == 'flutter_livepush_plugin'
-      target.build_configurations.each do |config|
-        config.build_settings['DEFINES_MODULE'] = 'YES'
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
-      end
+    # 统一所有 Pod 的部署目标
+    target.build_configurations.each do |config|
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
     end
   end
 end
