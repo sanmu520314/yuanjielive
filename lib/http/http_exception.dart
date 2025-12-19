@@ -23,7 +23,7 @@ class HttpException {
   ///错误信息处理
   ///[error] 错误信息类型
   static NetError handleException(DioError error) {
-    if (error.type == DioErrorType.response) {
+    if (error.type == DioExceptionType.badResponse) {
       dynamic e = error.message;
       if (e is SocketException) {
         return NetError(socketError, '网络异常，请检查你的网络！');
@@ -35,17 +35,16 @@ class HttpException {
         return NetError(parseError, '数据解析错误！');
       }
       return NetError(netError, '网络异常，请检查你的网络！');
-    } else if (error.type == DioErrorType.connectTimeout ||
-        error.type == DioErrorType.receiveTimeout) {
+    } else if (error.type == DioExceptionType.connectionTimeout ||
+        error.type == DioExceptionType.receiveTimeout) {
       ///  连接超时 || 请求超时 || 响应超时
       return NetError(timeoutError, '连接超时！');
-    } else if (error.type == DioErrorType.cancel) {
+    } else if (error.type == DioExceptionType.cancel) {
       return NetError(cancelError, '取消请求');
     } else {
       return NetError(unknownError, '未知异常');
     }
     }
-
 }
 
 class NetError {

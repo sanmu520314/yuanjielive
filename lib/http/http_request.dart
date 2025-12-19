@@ -12,13 +12,13 @@ import 'package:yuanjielive/http/request_api.dart';
 import 'http_exception.dart';
 
 /// 连接超时时间
-const int _connectTimeout = 10000;
+const Duration _connectTimeout= Duration(milliseconds: 10000);
 
 /// 接收超时时间
-const int _receiveTimeout = 10000;
+const Duration _receiveTimeout = Duration(milliseconds: 10000);
 
 /// 发送超时时间
-const int _sendTimeout = 10000;
+const Duration _sendTimeout = Duration(milliseconds: 10000);
 
 typedef Success<T> = Function(T data);
 typedef Fail = Function(int code, String msg);
