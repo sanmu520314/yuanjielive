@@ -1,9 +1,22 @@
+# 这一行必不可少：加载 Flutter 插件的 Ruby 助手脚本
 platform :ios, '13.0'
+
+# --- 开始：Flutter 自动生成的加载逻辑 ---
+target_dir = File.dirname(File.realpath(__FILE__))
+podhelper_path = File.join(target_dir, 'Flutter', 'podhelper.rb')
+if File.exist?(podhelper_path)
+  eval(File.read(podhelper_path))
+else
+  # 如果找不到文件，打印提示（这在 Codemagic 环境中不应发生）
+  puts "Warning: podhelper.rb not found at #{podhelper_path}"
+end
+# --- 结束：Flutter 自动生成的加载逻辑 ---
 
 target 'Runner' do
   use_frameworks!
   use_modular_headers!
 
+  # 只有加载了上面的 podhelper.rb，这个方法才会被识别
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
 end
 
@@ -15,4 +28,3 @@ post_install do |installer|
     end
   end
 end
-# 必须保留这一行
