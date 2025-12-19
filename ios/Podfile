@@ -13,9 +13,10 @@ end
 # --- 结束：Flutter 自动生成的加载逻辑 ---
 
 target 'Runner' do
-  # 1. 核心修复：强制使用静态链接，这是解决 Module not found 的特效药
-  use_frameworks! :linkage => :static
+  # 1. 彻底移除 use_frameworks!（包括 :static 模式）
+  # 这样 CocoaPods 会把插件编译为静态库，这是解决旧插件找不到 Module 的最终办法
 
+  # 2. 启用模块化头文件（这是必需的，且不冲突）
   use_modular_headers!
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
@@ -25,11 +26,17 @@ post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
 
-    # 2. 确保所有依赖库的编译版本一致
+    # 3. 核心修复代码：针对直播插件强制开启模块支持
+    if target.name == 'flutter_livepush_plugin'
+       target.build_configurations.each do |config|
+         config.build_settings['DEFINES_MODULE'] = 'YES'
+       end
+    end
+
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
-      # 针对旧插件的额外兼容配置
-      config.build_settings['BUILD_LIBRARY_FOR_DISTRIBUTION'] = 'YES'
+      # 强制设置 C++ 库支持，直播 SDK 通常需要
+      config.build_settings['CLANG_CXX_LIBRARY'] = 'libc++'
     end
   end
 end
