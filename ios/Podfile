@@ -1,6 +1,7 @@
-platform :ios, '12.0'
+# 这里的版本号必须与 Codemagic 里的 Deployment Target 一致，建议 13.0
+platform :ios, '13.0'
 
-# 解决 Ruby 3.x 兼容性问题
+# 解决 Ruby 3.3+ 兼容性问题
 class File; class << self; alias_method :exists?, :exist?; end; end
 
 target 'Runner' do
@@ -13,9 +14,12 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+
+    # 强制所有插件使用相同的 iOS 部署版本，避免版本冲突
     target.build_configurations.each do |config|
-      # 确保部署目标一致
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+      # 修复新版 Xcode 可能会遇到的签名问题
+      config.build_settings['ENABLE_BITCODE'] = 'NO'
     end
   end
 end
