@@ -1,21 +1,11 @@
-# 这一行必不可少：加载 Flutter 插件的 Ruby 助手脚本
+# 1. 确保平台版本足够高
 platform :ios, '13.0'
 
-# --- 开始：Flutter 自动生成的加载逻辑 ---
-target_dir = File.dirname(File.realpath(__FILE__))
-podhelper_path = File.join(target_dir, 'Flutter', 'podhelper.rb')
-if File.exist?(podhelper_path)
-  eval(File.read(podhelper_path))
-else
-  # 如果找不到文件，打印提示（这在 Codemagic 环境中不应发生）
-  puts "Warning: podhelper.rb not found at #{podhelper_path}"
-end
-# --- 结束：Flutter 自动生成的加载逻辑 ---
-
 target 'Runner' do
-  # 1. 保持静态链接，这是处理旧版二进制插件（如阿里云 SDK）最稳妥的方式
-  use_frameworks! :linkage => :static
+  # 2. 彻底移除或注释掉 use_frameworks!
+  # use_frameworks!
 
+  # 3. 必须启用这一行，它允许插件作为静态库共存
   use_modular_headers!
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
@@ -25,19 +15,15 @@ post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
 
-    # 针对阿里直播插件的特殊处理
-    if target.name.include?('flutter_livepush_plugin')
-      target.build_configurations.each do |config|
-        # 强制允许非模块化包含，防止 "Module not found"
-        config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
-        # 定义为模块
-        config.build_settings['DEFINES_MODULE'] = 'YES'
-      end
-    end
-
-    # 统一所有 Pod 的部署目标
+    # 4. 针对所有目标强制开启模块定义和头文件搜索
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+      # 关键：允许非模块化包含，这能解决 GeneratedPluginRegistrant 的报错
+      config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+      config.build_settings['DEFINES_MODULE'] = 'YES'
+
+      # 针对阿里直播 SDK 可能需要的静态库路径修复
+      config.build_settings['OTHER_LDFLAGS'] = '$(inherited) -ObjC'
     end
   end
 end
