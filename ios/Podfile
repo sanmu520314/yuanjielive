@@ -13,7 +13,7 @@ end
 # --- 结束：Flutter 自动生成的加载逻辑 ---
 
 target 'Runner' do
-  # 1. 这一行是关键！允许静态链接，解决 livepush 插件找不到模块的问题
+  # 1. 核心修复：强制使用静态链接，这是解决 Module not found 的特效药
   use_frameworks! :linkage => :static
 
   use_modular_headers!
@@ -25,10 +25,10 @@ post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
 
-    # 强制所有 Pods 兼容 iOS 13.0
+    # 2. 确保所有依赖库的编译版本一致
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
-      # 针对旧插件的额外兼容设置
+      # 针对旧插件的额外兼容配置
       config.build_settings['BUILD_LIBRARY_FOR_DISTRIBUTION'] = 'YES'
     end
   end
