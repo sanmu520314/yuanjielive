@@ -273,9 +273,10 @@ class LivePage extends StatelessWidget {
                     minimumSize: Size(0, 0),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    primary: Colors.black26,
+                    backgroundColor: Colors.black26,
+
                     // 兼容旧版本背景
-                    onPrimary: Colors.white,
+                    foregroundColor: Colors.white,
                     // 兼容旧版本文字
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -450,8 +451,8 @@ class LivePage extends StatelessWidget {
         child: ElevatedButton(
           onPressed: onPressed,
           style: ElevatedButton.styleFrom(
-            primary: Color(0xFF6F7DE8), // 旧版本使用 primary
-            onPrimary: Colors.white, // 文字颜色
+            backgroundColor: Color(0xFF6F7DE8), // 旧版本使用 primary
+            foregroundColor: Colors.white, // 文字颜色
             shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
           ),
@@ -471,8 +472,8 @@ class LivePage extends StatelessWidget {
         child: ElevatedButton(
           onPressed: onPressed,
           style: ElevatedButton.styleFrom(
-            primary: Color(0xFF6F7DE8), // 旧版本使用 primary
-            onPrimary: Colors.white, // 文字颜色
+            backgroundColor: Color(0xFF6F7DE8), // 旧版本使用 primary
+            foregroundColor: Colors.white, // 文字颜色
             shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
