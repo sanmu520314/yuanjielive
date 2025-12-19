@@ -48,11 +48,11 @@ class _PushButtonState extends State<PushButton> {
     Size minimumSize = Size(widget.width ?? 0, widget.height ?? 0);
     return TextButton(
       style: ButtonStyle(
-        backgroundColor: MaterialStateProperty.all(buttonColor),
-        shape: MaterialStateProperty.all(
+        backgroundColor: WidgetStateProperty.all(buttonColor),
+        shape: WidgetStateProperty.all(
           RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         ),
-        minimumSize: MaterialStateProperty.all(minimumSize),
+        minimumSize: WidgetStateProperty.all(minimumSize),
       ),
       onPressed: (() {
         if (widget.enable) {

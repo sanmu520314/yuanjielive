@@ -14,7 +14,7 @@ abstract class Routes {
   static final routePage = [
     GetPage(
       name: splashPage,
-      page: () =>  LivePage(),
+      page: () =>   LivePage(),
 
     ),
 

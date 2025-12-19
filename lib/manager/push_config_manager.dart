@@ -104,7 +104,7 @@ class ConfigItemValue {
 
   void updateValue(int intV) {
     this.intV = intV;
-    this.stringV = _getMapValueWithIndex(items, intV);
+    stringV = _getMapValueWithIndex(items, intV);
   }
 
   static dynamic _getMapValueWithIndex(Map map, int index) {
@@ -267,7 +267,7 @@ class ConfigData {
 
   static ConfigData? _instance;
 
-  ConfigData._() {}
+  ConfigData._();
 
   static ConfigData _getInstance() {
     _instance ??= ConfigData._();
@@ -324,111 +324,111 @@ class ConfigData {
 
   updateVideoBitrateValueWithFixQualityMode(int qualityMode) {
     if (qualityMode == 0) {
-      switch (this.resolution.intV) {
+      switch (resolution.intV) {
         case 0:
           {
-            this.targetVideoBitrate = 550;
-            this.minVideoBitrate = 120;
-            this.initialVideoBitrate = 300;
+            targetVideoBitrate = 550;
+            minVideoBitrate = 120;
+            initialVideoBitrate = 300;
           }
           break;
         case 1:
           {
-            this.targetVideoBitrate = 750;
-            this.minVideoBitrate = 180;
-            this.initialVideoBitrate = 450;
+            targetVideoBitrate = 750;
+            minVideoBitrate = 180;
+            initialVideoBitrate = 450;
           }
           break;
         case 2:
           {
-            this.targetVideoBitrate = 1000;
-            this.minVideoBitrate = 300;
-            this.initialVideoBitrate = 600;
+            targetVideoBitrate = 1000;
+            minVideoBitrate = 300;
+            initialVideoBitrate = 600;
           }
           break;
         case 3:
           {
-            this.targetVideoBitrate = 1200;
-            this.minVideoBitrate = 300;
-            this.initialVideoBitrate = 800;
+            targetVideoBitrate = 1200;
+            minVideoBitrate = 300;
+            initialVideoBitrate = 800;
           }
           break;
         case 4:
           {
-            this.targetVideoBitrate = 1400;
-            this.minVideoBitrate = 600;
-            this.initialVideoBitrate = 1000;
+            targetVideoBitrate = 1400;
+            minVideoBitrate = 600;
+            initialVideoBitrate = 1000;
           }
           break;
         case 5:
           {
-            this.targetVideoBitrate = 2000;
-            this.minVideoBitrate = 600;
-            this.initialVideoBitrate = 1500;
+            targetVideoBitrate = 2000;
+            minVideoBitrate = 600;
+            initialVideoBitrate = 1500;
           }
           break;
         case 6:
           {
-            this.targetVideoBitrate = 2500;
-            this.minVideoBitrate = 1200;
-            this.initialVideoBitrate = 1800;
+            targetVideoBitrate = 2500;
+            minVideoBitrate = 1200;
+            initialVideoBitrate = 1800;
           }
           break;
       }
-      this.fps.updateValue(AlivcLivePushFPS.fps_20.index);
+      fps.updateValue(AlivcLivePushFPS.fps_20.index);
     } else if (qualityMode == 1) {
-      switch (this.resolution.intV) {
+      switch (resolution.intV) {
         case 0:
           {
-            this.targetVideoBitrate = 250;
-            this.minVideoBitrate = 80;
-            this.initialVideoBitrate = 200;
+            targetVideoBitrate = 250;
+            minVideoBitrate = 80;
+            initialVideoBitrate = 200;
           }
           break;
         case 1:
           {
-            this.targetVideoBitrate = 350;
-            this.minVideoBitrate = 120;
-            this.initialVideoBitrate = 300;
+            targetVideoBitrate = 350;
+            minVideoBitrate = 120;
+            initialVideoBitrate = 300;
           }
           break;
         case 2:
           {
-            this.targetVideoBitrate = 600;
-            this.minVideoBitrate = 200;
-            this.initialVideoBitrate = 400;
+            targetVideoBitrate = 600;
+            minVideoBitrate = 200;
+            initialVideoBitrate = 400;
           }
           break;
         case 3:
           {
-            this.targetVideoBitrate = 800;
-            this.minVideoBitrate = 300;
-            this.initialVideoBitrate = 600;
+            targetVideoBitrate = 800;
+            minVideoBitrate = 300;
+            initialVideoBitrate = 600;
           }
           break;
         case 4:
           {
-            this.targetVideoBitrate = 1000;
-            this.minVideoBitrate = 300;
-            this.initialVideoBitrate = 800;
+            targetVideoBitrate = 1000;
+            minVideoBitrate = 300;
+            initialVideoBitrate = 800;
           }
           break;
         case 5:
           {
-            this.targetVideoBitrate = 1200;
-            this.minVideoBitrate = 300;
-            this.initialVideoBitrate = 1000;
+            targetVideoBitrate = 1200;
+            minVideoBitrate = 300;
+            initialVideoBitrate = 1000;
           }
           break;
         case 6:
           {
-            this.targetVideoBitrate = 2200;
-            this.minVideoBitrate = 1200;
-            this.initialVideoBitrate = 1500;
+            targetVideoBitrate = 2200;
+            minVideoBitrate = 1200;
+            initialVideoBitrate = 1500;
           }
           break;
       }
-      this.fps.updateValue(AlivcLivePushFPS.fps_25.index);
+      fps.updateValue(AlivcLivePushFPS.fps_25.index);
     }
   }
 }

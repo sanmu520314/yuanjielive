@@ -30,7 +30,7 @@ class RequestRepository {
       success: (jsonString) {
         print('anchorlogin 原始响应: "$jsonString"');
 
-        if (jsonString == null || jsonString.isEmpty) {
+        if (jsonString.isEmpty) {
           fail(-1, '服务器返回空数据');
           return;
         }
@@ -80,7 +80,7 @@ class RequestRepository {
       success: (jsonString) {
         print('getbroadcastlog 原始响应: "$jsonString"');
 
-        if (jsonString == null || jsonString.isEmpty) {
+        if (jsonString.isEmpty) {
           fail(-1, '服务器返回空数据');
           return;
         }
@@ -130,7 +130,7 @@ class RequestRepository {
       success: (jsonString) {
         print('tobroadcast 原始响应: "$jsonString"');
 
-        if (jsonString == null || jsonString.isEmpty) {
+        if (jsonString.isEmpty) {
           fail(-1, '服务器返回空数据');
           return;
         }
@@ -180,7 +180,7 @@ class RequestRepository {
       success: (jsonString) {
         print('updatebroadcast 原始响应: "$jsonString"');
 
-        if (jsonString == null || jsonString.isEmpty) {
+        if (jsonString.isEmpty) {
           fail(-1, '服务器返回空数据');
           return;
         }

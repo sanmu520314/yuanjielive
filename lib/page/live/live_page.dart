@@ -11,6 +11,8 @@ import 'live_controller.dart';
 class LivePage extends StatelessWidget {
   final LiveController controller = Get.put(LiveController());
 
+   LivePage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -41,28 +43,28 @@ class LivePage extends StatelessWidget {
       height: double.infinity,
       decoration: _backgroundDecoration(),
       child: SingleChildScrollView(
-        physics: ClampingScrollPhysics(), // 防止回弹时露出空白
+        physics: const ClampingScrollPhysics(), // 防止回弹时露出空白
         child: Column(
           children: [
-            SizedBox(height: 58),
-            Text("登录",
+            const SizedBox(height: 58),
+            const Text("登录",
                 style: TextStyle(
                     color: Colors.white70,
                     fontSize: 18,
                     fontWeight: FontWeight.w600)),
-            SizedBox(height: 120),
+            const SizedBox(height: 120),
             _buildLogo(),
-            SizedBox(height: 60),
+            const SizedBox(height: 60),
             _buildTextField(
                 "请输入账号", textController: controller.accountController),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             _buildTextField("请输入密码", isObscure: true,
                 textController: controller.passwordController),
-            SizedBox(height: 40),
+            const SizedBox(height: 40),
             _buildMainButton("登录", () => controller.login()),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             _buildProtocol(),
-            SizedBox(height: 40),
+            const SizedBox(height: 40),
           ],
         ),
       ),
@@ -74,42 +76,42 @@ class LivePage extends StatelessWidget {
     controller.getLiveHistory();
     return Container(
       decoration: _backgroundDecoration(),
-      padding: EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(height: 60),
+          const SizedBox(height: 60),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("开始直播",
+              const Text("开始直播",
                   style: TextStyle(
                       color: Colors.white,
                       fontSize: 20,
                       fontWeight: FontWeight.bold)),
               Row(children: [
                 // _buildSmallBtn("帮助"),
-                SizedBox(width: 10),
+                const SizedBox(width: 10),
                 _buildSmallBtn("退出"),
               ]),
             ],
           ),
-          SizedBox(height: 40),
+          const SizedBox(height: 40),
           Center(
               child: Image.asset(
                 "assets/images/zhibo.png",
                 width: 111,
                 height: 87,
               )),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           _buildStartLiveButton("开始直播", () => controller.startLive()),
-          SizedBox(
+          const SizedBox(
             height: 40,
           ),
-          Row(
+          const Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const ColoredBox(
+              ColoredBox(
                 color: Color(0xFF6F7DE8),
                 child: SizedBox(width: 8, height: 20),
               ),
@@ -168,15 +170,15 @@ class LivePage extends StatelessWidget {
               children: [
                 GestureDetector(
                     onTap: () => controller.currentState.value = 1,
-                    child: Icon(Icons.arrow_back_ios, color: Colors.white)),
-                SizedBox(width: 0),
+                    child: const Icon(Icons.arrow_back_ios, color: Colors.white)),
+                const SizedBox(width: 0),
                 Image.asset(
                   "assets/images/logo.png",
                   width: 32,
                   height: 32,
                 ),
-                SizedBox(width: 5),
-                Text("元界主播", style: TextStyle(color: Colors.white)),
+                const SizedBox(width: 5),
+                const Text("元界主播", style: TextStyle(color: Colors.white)),
               ],
             )),
         Positioned(
@@ -242,37 +244,37 @@ class LivePage extends StatelessWidget {
               children: [
                 GestureDetector(
                     onTap: () => controller.currentState.value = 1,
-                    child: Icon(Icons.arrow_back_ios, color: Colors.white)),
-                SizedBox(width: 0),
+                    child: const Icon(Icons.arrow_back_ios, color: Colors.white)),
+                const SizedBox(width: 0),
                 Image.asset(
                   "assets/images/logo.png",
                   width: 32,
                   height: 32,
                 ),
-                SizedBox(width: 5),
-                Text("元界主播", style: TextStyle(color: Colors.white)),
+                const SizedBox(width: 5),
+                const Text("元界主播", style: TextStyle(color: Colors.white)),
 
-                Spacer(),
+                const Spacer(),
                 // 中间：开播时长
                 Obx(() {
                   bool isPushing = controller.isPushing.value;
                   return Visibility(
                     visible: isPushing, // 这里控制显示隐藏
                     child: Text("已开播: "+controller.liveDuration.value,
-                    style: TextStyle(
+                    style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12,
                         shadows: [Shadow(blurRadius: 2, color: Colors.black)])),
                   );
                 }),
-                SizedBox(width: 5),
+                const SizedBox(width: 5),
                 // 右侧：结束按钮
                 ElevatedButton(
                   onPressed: () => controller.endLive(),
                   style: ElevatedButton.styleFrom(
-                    minimumSize: Size(0, 0),
+                    minimumSize: const Size(0, 0),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     backgroundColor: Colors.black26,
 
                     // 兼容旧版本背景
@@ -280,10 +282,10 @@ class LivePage extends StatelessWidget {
                     // 兼容旧版本文字
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
-                        side: BorderSide(color: Colors.white24)),
+                        side: const BorderSide(color: Colors.white24)),
                     elevation: 0,
                   ),
-                  child: Text("结束直播", style: TextStyle(fontSize: 10.6)),
+                  child: const Text("结束直播", style: TextStyle(fontSize: 10.6)),
                 )
               ],
             )),
@@ -375,12 +377,12 @@ class LivePage extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           _buildLogo(),
-          SizedBox(height: 40),
-          Text("直播结束", style: TextStyle(color: Colors.white, fontSize: 24)),
-          SizedBox(height: 4),
+          const SizedBox(height: 40),
+          const Text("直播结束", style: TextStyle(color: Colors.white, fontSize: 24)),
+          const SizedBox(height: 4),
           Text("时长: ${controller.liveDuration.value}",
-              style: TextStyle(color: Colors.white38)),
-          SizedBox(height: 60),
+              style: const TextStyle(color: Colors.white38)),
+          const SizedBox(height: 60),
           _buildMainButton("确定", () => controller.backToHistory()),
         ],
       ),
@@ -390,7 +392,7 @@ class LivePage extends StatelessWidget {
   // --- 公用组件方法 ---
 
   BoxDecoration _backgroundDecoration() {
-    return BoxDecoration(
+    return const BoxDecoration(
         image: DecorationImage(
           image: AssetImage("assets/images/biejng.png"),
           fit: BoxFit.cover,
@@ -401,8 +403,8 @@ class LivePage extends StatelessWidget {
     return Column(
       children: [
         Image.asset("assets/images/logo.png"),
-        SizedBox(height: 20),
-        Text("元界主播",
+        const SizedBox(height: 20),
+        const Text("元界主播",
             style: TextStyle(
                 color: Colors.white38,
                 fontSize: 20,
@@ -414,7 +416,7 @@ class LivePage extends StatelessWidget {
   Widget _buildTextField(String hint,
       {bool isObscure = false, bool isTranslucent = false, TextEditingController? textController}) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 30),
+      padding: const EdgeInsets.symmetric(horizontal: 30),
       child: SizedBox(
         height: 45,
         child: TextField(
@@ -423,15 +425,15 @@ class LivePage extends StatelessWidget {
           obscureText: isObscure,
           textAlignVertical: TextAlignVertical.center,
           //
-          style: TextStyle(
+          style: const TextStyle(
               color: Colors.white),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: Colors.white70, fontSize: 14),
+            hintStyle: const TextStyle(color: Colors.white70, fontSize: 14),
             filled: true,
             // isDense: true,
             // 调整内边距，数值越小，输入框越矮
-            contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 15),
+            contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
             fillColor: isTranslucent ? Colors.black45 : Colors.white10,
             border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -444,20 +446,20 @@ class LivePage extends StatelessWidget {
 
   Widget _buildStartLiveButton(String text, VoidCallback onPressed) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 10),
       child: SizedBox(
         width: double.infinity,
         height: 50,
         child: ElevatedButton(
           onPressed: onPressed,
           style: ElevatedButton.styleFrom(
-            backgroundColor: Color(0xFF6F7DE8), // 旧版本使用 primary
+            backgroundColor: const Color(0xFF6F7DE8), // 旧版本使用 primary
             foregroundColor: Colors.white, // 文字颜色
             shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
           ),
           child:
-          Text(text, style: TextStyle(fontSize: 18, color: Colors.white)),
+          Text(text, style: const TextStyle(fontSize: 18, color: Colors.white)),
         ),
       ),
     );
@@ -465,20 +467,20 @@ class LivePage extends StatelessWidget {
 
   Widget _buildMainButton(String text, VoidCallback onPressed) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 40),
+      padding: const EdgeInsets.symmetric(horizontal: 40),
       child: SizedBox(
         width: double.infinity,
         height: 50,
         child: ElevatedButton(
           onPressed: onPressed,
           style: ElevatedButton.styleFrom(
-            backgroundColor: Color(0xFF6F7DE8), // 旧版本使用 primary
+            backgroundColor: const Color(0xFF6F7DE8), // 旧版本使用 primary
             foregroundColor: Colors.white, // 文字颜色
             shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
           child:
-          Text(text, style: TextStyle(fontSize: 18, color: Colors.white)),
+          Text(text, style: const TextStyle(fontSize: 18, color: Colors.white)),
         ),
       ),
     );
@@ -510,7 +512,7 @@ class LivePage extends StatelessWidget {
                       : Colors.transparent,
                 ),
                 child: controller.isAgreed.value
-                    ? Icon(
+                    ? const Icon(
                   Icons.check,
                   size: 12,
                   // 关键点：图标颜色设置为透明，或者设置为你背景图片的深蓝色
@@ -520,8 +522,8 @@ class LivePage extends StatelessWidget {
                     : null,
               ),
             )),
-        SizedBox(width: 8),
-        Text(
+        const SizedBox(width: 8),
+        const Text(
           "我已阅读并同意《服务协议》和《隐私政策》",
           style: TextStyle(color: Colors.white54, fontSize: 11),
         ),
@@ -535,8 +537,8 @@ class LivePage extends StatelessWidget {
       padding: EdgeInsets.zero,
       margin: EdgeInsets.zero,
       child: ListTile(
-        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Container(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: SizedBox(
           width: 20, // 固定宽度
           child: CustomPaint(
             painter: DashedLinePainter(
@@ -562,19 +564,19 @@ class LivePage extends StatelessWidget {
         title: Text(
           liveItem.formattedDate,
           // "12月${14 - index}日",
-          style: TextStyle(color: Colors.white, fontSize: 16),
+          style: const TextStyle(color: Colors.white, fontSize: 16),
         ),
         subtitle: Text(
           liveItem.formattedTimeRange,
           // "20:00-24:00",
-          style: TextStyle(color: Colors.white38),
+          style: const TextStyle(color: Colors.white38),
         ),
       ),
     );
   }
 
   Widget _buildImageBackground() {
-    return Container(
+    return SizedBox(
       width: double.infinity,
       height: double.infinity,
       child: Image.asset(
@@ -590,11 +592,11 @@ class LivePage extends StatelessWidget {
         exit(0);
       },
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
             color: Colors.white10, borderRadius: BorderRadius.circular(15)),
         child:
-        Text(text, style: TextStyle(color: Colors.white70, fontSize: 12)),
+        Text(text, style: const TextStyle(color: Colors.white70, fontSize: 12)),
       ),
     );
   }

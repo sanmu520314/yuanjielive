@@ -1,5 +1,4 @@
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../../res/strings.dart';
 import '../../res/style.dart';
@@ -37,7 +36,7 @@ class LoadingDialog extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: <Widget>[
-                Center(
+                const Center(
 
                 ),
                 Text(text, style: Styles.style_white_14)

@@ -15,10 +15,10 @@ class ButtonStyles{
   /// [ButtonStyle]
   static ButtonStyle getButtonStyle(){
     return ButtonStyle(
-      overlayColor: MaterialStateProperty.all(ColorStyle.color_E2E3E8_33),
+      overlayColor: WidgetStateProperty.all(ColorStyle.color_E2E3E8_33),
       animationDuration:const Duration(milliseconds: 200),
-      padding: MaterialStateProperty.all(const EdgeInsets.all(0)),
-      shape: MaterialStateProperty.all(const StadiumBorder()),
+      padding: WidgetStateProperty.all(const EdgeInsets.all(0)),
+      shape: WidgetStateProperty.all(const StadiumBorder()),
     );
   }
 
@@ -26,7 +26,7 @@ class ButtonStyles{
   /// [ButtonStyle]
   static ButtonStyle getTransparentStyle(){
     return ButtonStyle(
-      overlayColor: MaterialStateProperty.all(Colors.transparent),
+      overlayColor: WidgetStateProperty.all(Colors.transparent),
     );
   }
 
@@ -35,9 +35,9 @@ class ButtonStyles{
   /// [ButtonStyle]
   static ButtonStyle getNoShapeStyle(){
     return ButtonStyle(
-      shadowColor: MaterialStateProperty.all( ColorStyle.colorShadow),
+      shadowColor: WidgetStateProperty.all( ColorStyle.colorShadow),
       animationDuration:const Duration(milliseconds: 200),
-      padding: MaterialStateProperty.all(const EdgeInsets.all(0)),
+      padding: WidgetStateProperty.all(const EdgeInsets.all(0)),
     );
   }
 }

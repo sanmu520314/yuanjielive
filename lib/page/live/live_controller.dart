@@ -60,7 +60,7 @@ class LiveController extends GetxController {
   void _startTimer() {
     _timer?.cancel(); // 先取消旧的
     secondsElapsed.value = 0;
-    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       secondsElapsed.value++;
       liveDuration.value = _formatDuration(secondsElapsed.value);
     });
@@ -181,7 +181,7 @@ class LiveController extends GetxController {
   }
   void GenerateLivePushURL(String deviceCode) {
     print("GenerateLivePushURL--------anchorId----------${anchorId.value}");
-    print("GenerateLivePushURL--------deviceCode----------${deviceCode}");
+    print("GenerateLivePushURL--------deviceCode----------$deviceCode");
     request.tobroadcast(
         data: {
           'anchorId': anchorId.value,
@@ -209,8 +209,8 @@ class LiveController extends GetxController {
 
 
   void updateBroadcast(int castId,int  status) {
-    print("updateBroadcas--------castId----------${castId}");
-    print("updateBroadcas--------status----------${status}");
+    print("updateBroadcas--------castId----------$castId");
+    print("updateBroadcas--------status----------$status");
     request.updatebroadcast(
         data: {
           'id': castId,
@@ -441,7 +441,7 @@ class LiveController extends GetxController {
         "直播需要摄像头和麦克风权限，请在设置中开启",
         mainButton: TextButton(
           onPressed: () => openAppSettings(), // 引导用户去系统设置页
-          child: Text("去设置"),
+          child: const Text("去设置"),
         ),
       );
       return false;
