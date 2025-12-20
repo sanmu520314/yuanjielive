@@ -1,34 +1,26 @@
-# 1. 标准且正确的路径：当前 Podfile 同级目录下的 Flutter 文件夹
-# 这里的 File.dirname(__FILE__) 就是 ios 目录
-podhelper_path = File.join(File.dirname(__FILE__), 'Flutter', 'podhelper.rb')
+# 1. 强制定位真正的 podhelper.rb
+# __dir__ 是 ios/ 目录，所以我们要找 ios/Flutter/podhelper.rb
+podhelper_path = File.expand_path('Flutter/podhelper.rb', __dir__)
 
-# 2. 强力加载逻辑
-if File.exist?(podhelper_path)
-  load podhelper_path
-else
-  # 如果依然找不到，说明 Flutter 环境没初始化好，我们打印错误但不崩溃，
-  # 这样可以让 pod install 继续跑完，方便看后续日志
-  puts "################################################################"
-  puts "ERROR: podhelper.rb NOT FOUND at #{podhelper_path}"
-  puts "Please ensure 'flutter pub get' or 'flutter precache' ran successfully."
-  puts "################################################################"
+# 调试打印，看看究竟找对了没
+puts "DEBUG: Looking for podhelper at: #{podhelper_path}"
 
-  # 定义空方法，防止后续代码调用报错
-  def flutter_install_all_ios_pods(path); end
-  def flutter_additional_ios_build_settings(target); end
+unless File.exist?(podhelper_path)
+  # 如果找不到，直接抛错，不要假装成功，否则后面编译必挂
+  raise "CRITICAL ERROR: podhelper.rb not found! Run 'flutter pub get' first."
 end
+
+load podhelper_path
 
 platform :ios, '12.0'
 
 target 'Runner' do
-  # 阿里 SDK 要求静态链接
+  # 阿里 SDK 必须静态链接
   use_frameworks! :linkage => :static
   use_modular_headers!
 
-  # 只有文件存在时才执行安装
-  if File.exist?(podhelper_path)
-    flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
-  end
+  # 2. 安装插件 (这是 path_provider 能工作的关键)
+  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
 end
 
 post_install do |installer|
@@ -48,14 +40,15 @@ post_install do |installer|
     end
   end
 
-  # 3. 阿里 SDK 补丁 (Ruby 版)
+  # 3. 阿里 SDK 补丁 (GeneratedPluginRegistrant.m)
   reg_m = File.join(Dir.pwd, 'Runner', 'GeneratedPluginRegistrant.m')
   if File.exist?(reg_m)
+    puts "DEBUG: Patching GeneratedPluginRegistrant..."
     content = File.read(reg_m)
     if content.include?('@import flutter_livepush_plugin;')
-      puts "Applying AliCloud SDK Patch..."
       content.gsub!('@import flutter_livepush_plugin;', '#import "AlivcLivePusherPlugin.h"')
       File.open(reg_m, 'w') { |f| f.write(content) }
+      puts "SUCCESS: Patched Alivc import."
     end
   end
 end
