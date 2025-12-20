@@ -1,16 +1,6 @@
-# 1. 标准路径加载
-# 这里的 __dir__ 就是 ios 目录
+# 1. 指向刚才注入的文件
 podhelper_path = File.join(__dir__, 'Flutter', 'podhelper.rb')
-
-# 调试日志
-puts "Checking podhelper at: #{podhelper_path}"
-
-# 此时文件必须存在，因为 Pre-build 脚本刚刚强制复制了它
-unless File.exist?(podhelper_path)
-  raise "CRITICAL: podhelper.rb is missing even after Pre-build script!"
-end
-
-load podhelper_path
+load podhelper_path if File.exist?(podhelper_path)
 
 platform :ios, '12.0'
 
@@ -18,17 +8,17 @@ target 'Runner' do
   use_frameworks! :linkage => :static
   use_modular_headers!
 
-  # 2. 安装所有插件 (path_provider 的救星)
+  # 2. 调用注入的函数安装所有插件（解决 path_provider 问题）
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
 end
 
 post_install do |installer|
   installer.pods_project.targets.each do |target|
+    # 调用注入的函数
     flutter_additional_ios_build_settings(target) if defined?(flutter_additional_ios_build_settings)
 
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
-      config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
       config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
 
       if target.name == 'Runner'
@@ -39,12 +29,11 @@ post_install do |installer|
     end
   end
 
-  # 3. 阿里 SDK 导入修复
+  # 3. 阿里 SDK 修正
   reg_m = File.join(Dir.pwd, 'Runner', 'GeneratedPluginRegistrant.m')
   if File.exist?(reg_m)
     content = File.read(reg_m)
     if content.include?('@import flutter_livepush_plugin;')
-      puts "Podfile: Patching Alivc import..."
       content.gsub!('@import flutter_livepush_plugin;', '#import "AlivcLivePusherPlugin.h"')
       File.open(reg_m, 'w') { |f| f.write(content) }
     end
