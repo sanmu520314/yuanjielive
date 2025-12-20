@@ -15,21 +15,22 @@ post_install do |installer|
     flutter_additional_ios_build_settings(target) if defined?(flutter_additional_ios_build_settings)
 
     target.build_configurations.each do |config|
-      # 1. 解决 Flutter/Flutter.h 找不到的关键：强制添加搜索路径
-      # $(SRCROOT)/../Flutter 是指向 Flutter 引擎所在目录的标准路径
+      # 1. 核心修复：强制注入 Flutter 头文件搜索路径
+      # 在静态链接模式下，插件 Pod 经常找不到外部的 Flutter.h
       config.build_settings['HEADER_SEARCH_PATHS'] ||= '$(inherited) '
       config.build_settings['HEADER_SEARCH_PATHS'] << '"$(SRCROOT)/../Flutter/Flutter.framework/Headers" '
 
+      # 2. 注入框架搜索路径
       config.build_settings['FRAMEWORK_SEARCH_PATHS'] ||= '$(inherited) '
       config.build_settings['FRAMEWORK_SEARCH_PATHS'] << '"$(SRCROOT)/../Flutter" '
 
-      # 2. 常规兼容性设置
+      # 3. 基础兼容性设置
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
       config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
     end
   end
 
-  # 3. 阿里 SDK 导入修正脚本
+  # 4. 阿里 SDK 导入修复逻辑
   reg_m = File.join(Dir.pwd, 'Runner', 'GeneratedPluginRegistrant.m')
   if File.exist?(reg_m)
     content = File.read(reg_m)
