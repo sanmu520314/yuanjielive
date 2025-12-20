@@ -16,13 +16,15 @@ target 'Runner' do
 end
 
 post_install do |installer|
-  # 1. 动态探测插件头文件的物理位置
-  # 在 Pods 目录下查找 AlivcLivePusherPlugin.h 的真实路径
-  base_dir = File.join(Dir.pwd, 'Pods')
-  found_path = Dir.glob("#{base_dir}/**/AlivcLivePusherPlugin.h").first
-  plugin_header_dir = found_path ? File.dirname(found_path) : ""
-
-  puts "Found AlivcLivePusherPlugin.h at: #{plugin_header_dir}" if found_path
+  # 1. 扩大搜索范围：直接定位 Pods 目录下所有可能存放头文件的路径
+  # 这样不仅能找到插件的头文件，还能找到阿里 SDK 核心库的头文件
+  extra_search_paths = [
+    '"$(SRCROOT)/Pods/Headers/Public"',
+    '"$(SRCROOT)/Pods/Headers/Public/flutter_livepush_plugin"',
+    '"$(SRCROOT)/Pods/Headers/Public/AliVCSDK_InteractiveLive"',
+    '"$(SRCROOT)/Pods/AliVCSDK_InteractiveLive/**"', # 递归查找阿里 SDK 内部
+    '"$(SRCROOT)/Pods/flutter_livepush_plugin/**"'  # 递归查找插件内部
+  ]
 
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target) rescue nil
@@ -30,27 +32,29 @@ post_install do |installer|
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
       config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
+
+      # 开启非模块化引用，这是解决“阿里 SDK 这种老旧静态库”报错的命门
       config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
 
-      # 2. 注入动态查找到的路径
-      if target.name == 'Runner' && !plugin_header_dir.empty?
+      # 针对主项目 Runner 注入全量搜索路径
+      if target.name == 'Runner'
         config.build_settings['HEADER_SEARCH_PATHS'] ||= '$(inherited) '
-        config.build_settings['HEADER_SEARCH_PATHS'] << "\"#{plugin_header_dir}\" "
-        # 兜底：加入公共头文件根目录
-        config.build_settings['HEADER_SEARCH_PATHS'] << '"$(SRCROOT)/Pods/Headers/Public" '
+        extra_search_paths.each do |path|
+          config.build_settings['HEADER_SEARCH_PATHS'] << "#{path} "
+        end
       end
     end
   end
 
-  # --- 3. 实时强改补丁 ---
+  # --- 2. 实时强改补丁（保持不变，增加一行日志确认） ---
   registrant_path = File.join(File.dirname(__FILE__), 'Runner', 'GeneratedPluginRegistrant.m')
   if File.exist?(registrant_path)
-    puts "Applying post_install patch to GeneratedPluginRegistrant.m..."
+    puts "------------------------------------------------"
+    puts "ACTION: Patching GeneratedPluginRegistrant.m"
     contents = File.read(registrant_path)
-    # 使用最通用的引号导入，依赖上面动态注入的 HEADER_SEARCH_PATHS
     contents.gsub!(/@import\s+flutter_livepush_plugin;/, '#import "AlivcLivePusherPlugin.h"')
-    # 清理之前可能残留的错误语法
     contents.gsub!(/#import\s+<flutter_livepush_plugin\/AlivcLivePusherPlugin\.h>/, '#import "AlivcLivePusherPlugin.h"')
     File.open(registrant_path, 'w') { |file| file.puts contents }
+    puts "------------------------------------------------"
   end
 end
