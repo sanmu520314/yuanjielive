@@ -16,37 +16,41 @@ target 'Runner' do
 end
 
 post_install do |installer|
+  # 1. 动态探测插件头文件的物理位置
+  # 在 Pods 目录下查找 AlivcLivePusherPlugin.h 的真实路径
+  base_dir = File.join(Dir.pwd, 'Pods')
+  found_path = Dir.glob("#{base_dir}/**/AlivcLivePusherPlugin.h").first
+  plugin_header_dir = found_path ? File.dirname(found_path) : ""
+
+  puts "Found AlivcLivePusherPlugin.h at: #{plugin_header_dir}" if found_path
+
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target) rescue nil
 
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
       config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
-
-      # 开启非模块化包含
       config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
 
-      # 强制添加所有可能的头文件路径
-      if target.name == 'Runner'
+      # 2. 注入动态查找到的路径
+      if target.name == 'Runner' && !plugin_header_dir.empty?
         config.build_settings['HEADER_SEARCH_PATHS'] ||= '$(inherited) '
-        # 增加这三个路径，基本覆盖了静态库在 Pods 中的所有存在形式
+        config.build_settings['HEADER_SEARCH_PATHS'] << "\"#{plugin_header_dir}\" "
+        # 兜底：加入公共头文件根目录
         config.build_settings['HEADER_SEARCH_PATHS'] << '"$(SRCROOT)/Pods/Headers/Public" '
-        config.build_settings['HEADER_SEARCH_PATHS'] << '"$(SRCROOT)/Pods/Headers/Public/flutter_livepush_plugin" '
-        config.build_settings['HEADER_SEARCH_PATHS'] << '"$(SRCROOT)/Pods/flutter_livepush_plugin/ios/Classes" '
       end
     end
   end
 
-  # --- 修正代码导入语法 ---
+  # --- 3. 实时强改补丁 ---
   registrant_path = File.join(File.dirname(__FILE__), 'Runner', 'GeneratedPluginRegistrant.m')
   if File.exist?(registrant_path)
     puts "Applying post_install patch to GeneratedPluginRegistrant.m..."
     contents = File.read(registrant_path)
-    # 放弃尖括号，改回引号。因为我们在 HEADER_SEARCH_PATHS 里已经加了具体路径
-    # 这样 Xcode 只要在搜索路径里看到这个文件，就能直接 import 进来
-    contents.gsub!('@import flutter_livepush_plugin;', '#import "AlivcLivePusherPlugin.h"')
-    # 顺便把可能有冲突的引用的也清理一下
-    contents.gsub!('<flutter_livepush_plugin/AlivcLivePusherPlugin.h>', '"AlivcLivePusherPlugin.h"')
+    # 使用最通用的引号导入，依赖上面动态注入的 HEADER_SEARCH_PATHS
+    contents.gsub!(/@import\s+flutter_livepush_plugin;/, '#import "AlivcLivePusherPlugin.h"')
+    # 清理之前可能残留的错误语法
+    contents.gsub!(/#import\s+<flutter_livepush_plugin\/AlivcLivePusherPlugin\.h>/, '#import "AlivcLivePusherPlugin.h"')
     File.open(registrant_path, 'w') { |file| file.puts contents }
   end
 end
