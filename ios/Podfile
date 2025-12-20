@@ -1,11 +1,12 @@
-# 1. 确保平台版本足够高
+# 1. 必须加载这个文件，解决你刚才遇到的 undefined method 报错
+load File.join(File.dirname(File.realpath(__FILE__)), 'Flutter', 'podhelper.rb')
+
 platform :ios, '13.0'
 
 target 'Runner' do
-  # 2. 彻底移除或注释掉 use_frameworks!
-  # use_frameworks!
+  # 2. 关键：禁止 use_frameworks!，因为阿里 SDK 依赖 Legacy 链接方式
+  # 如果这里有 use_frameworks! 请务必删除或注释掉
 
-  # 3. 必须启用这一行，它允许插件作为静态库共存
   use_modular_headers!
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
@@ -15,15 +16,17 @@ post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
 
-    # 4. 针对所有目标强制开启模块定义和头文件搜索
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
-      # 关键：允许非模块化包含，这能解决 GeneratedPluginRegistrant 的报错
+
+      # 3. 核心修复：解决阿里提到的 iOS + iOS Simulator 冲突
+      # 排除模拟器不支持的架构，并允许非模块化引用
+      config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
       config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
       config.build_settings['DEFINES_MODULE'] = 'YES'
 
-      # 针对阿里直播 SDK 可能需要的静态库路径修复
-      config.build_settings['OTHER_LDFLAGS'] = '$(inherited) -ObjC'
+      # 针对旧版编译系统的兼容性补丁
+      config.build_settings['BUILD_LIBRARY_FOR_DISTRIBUTION'] = 'YES'
     end
   end
 end
