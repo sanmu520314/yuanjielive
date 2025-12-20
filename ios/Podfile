@@ -17,7 +17,6 @@ end
 
 post_install do |installer|
   installer.pods_project.targets.each do |target|
-    # 同样增加容错
     flutter_additional_ios_build_settings(target) rescue nil
 
     target.build_configurations.each do |config|
@@ -25,5 +24,15 @@ post_install do |installer|
       config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
       config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
     end
+  end
+
+  # --- 核心补丁：实时强改 GeneratedPluginRegistrant ---
+  registrant_path = File.join(File.dirname(__FILE__), 'Runner', 'GeneratedPluginRegistrant.m')
+  if File.exist?(registrant_path)
+    puts "Applying post_install patch to GeneratedPluginRegistrant.m..."
+    contents = File.read(registrant_path)
+    # 将 @import 换成传统的 #import
+    contents.gsub!('@import flutter_livepush_plugin;', '#import "AlivcLivePusherPlugin.h"')
+    File.open(registrant_path, 'w') { |file| file.puts contents }
   end
 end
