@@ -32,25 +32,23 @@ post_install do |installer|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
       config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
 
-      # 阿里 SDK 必备
+      # 阿里 SDK 必备：允许非模块化引入
       config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
 
       if target.name == 'Runner'
         config.build_settings['SWIFT_OBJC_BRIDGING_HEADER'] = 'Runner/Runner-Bridging-Header.h'
-        # 强制搜索 Runner 文件夹
+        # 强制将 Runner 目录设为最高优先级搜索路径
         config.build_settings['HEADER_SEARCH_PATHS'] ||= '$(inherited) '
         config.build_settings['HEADER_SEARCH_PATHS'] << '"$(SRCROOT)/Runner" '
-        # 补上一条 Pods 里的递归路径
-        config.build_settings['HEADER_SEARCH_PATHS'] << '"$(SRCROOT)/Pods/**" '
       end
     end
   end
 
-  # 修复自动生成的注册文件
+  # 实时修复 GeneratedPluginRegistrant.m
   registrant_m = File.join(Dir.pwd, 'Runner', 'GeneratedPluginRegistrant.m')
   if File.exist?(registrant_m)
     content = File.read(registrant_m)
-    # 将 @import 改为 #import "..."
+    # 将报错的 @import 强行替换为本地 #import
     content.gsub!(/@import\s+flutter_livepush_plugin;/, '#import "AlivcLivePusherPlugin.h"')
     File.open(registrant_m, 'w') { |f| f.write(content) }
   end
