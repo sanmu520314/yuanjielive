@@ -7,21 +7,27 @@ target 'Runner' do
   use_frameworks! :linkage => :static
   use_modular_headers!
 
-  # 显式传入当前 ios 目录的路径
   flutter_install_all_ios_pods(File.dirname(File.realpath(__FILE__)))
 end
 
 post_install do |installer|
   installer.pods_project.targets.each do |target|
+    # 1. 应用 Flutter 官方的基本设置
     flutter_additional_ios_build_settings(target) if defined?(flutter_additional_ios_build_settings)
 
     target.build_configurations.each do |config|
+      # 2. 修复 'Flutter/Flutter.h' not found 的核心代码
+      # 将 Flutter.framework 的路径加入搜索路径
+      config.build_settings['HEADER_SEARCH_PATHS'] ||= '$(inherited) '
+      config.build_settings['HEADER_SEARCH_PATHS'] << '"$(SRCROOT)/Flutter" '
+
+      # 3. 其他常规设置
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
       config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
     end
   end
 
-  # 阿里补丁
+  # 4. 阿里 SDK 修正逻辑
   reg_m = File.join(Dir.pwd, 'Runner', 'GeneratedPluginRegistrant.m')
   if File.exist?(reg_m)
     content = File.read(reg_m)
