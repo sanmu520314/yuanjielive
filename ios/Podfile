@@ -4,6 +4,7 @@ load podhelper_path if File.exist?(podhelper_path)
 platform :ios, '12.0'
 
 target 'Runner' do
+  # 阿里 SDK 必须使用静态链接
   use_frameworks! :linkage => :static
   use_modular_headers!
 
@@ -15,27 +16,29 @@ post_install do |installer|
     flutter_additional_ios_build_settings(target) if defined?(flutter_additional_ios_build_settings)
 
     target.build_configurations.each do |config|
-      # 1. 核心修复：强制注入 Flutter 头文件搜索路径
-      # 在静态链接模式下，插件 Pod 经常找不到外部的 Flutter.h
+      # 1. 修复 'Flutter/Flutter.h' 找不到的关键：强制注入搜索路径
+      # 同时覆盖 Header 和 Framework 路径，确保插件能看到 Flutter 引擎
       config.build_settings['HEADER_SEARCH_PATHS'] ||= '$(inherited) '
-      config.build_settings['HEADER_SEARCH_PATHS'] << '"$(SRCROOT)/../Flutter/Flutter.framework/Headers" '
+      config.build_settings['HEADER_SEARCH_PATHS'] << '"$(PODS_ROOT)/../Flutter/Flutter.framework/Headers" '
+      config.build_settings['HEADER_SEARCH_PATHS'] << '"$(SRCROOT)/Flutter/Flutter.framework/Headers" '
 
-      # 2. 注入框架搜索路径
       config.build_settings['FRAMEWORK_SEARCH_PATHS'] ||= '$(inherited) '
-      config.build_settings['FRAMEWORK_SEARCH_PATHS'] << '"$(SRCROOT)/../Flutter" '
+      config.build_settings['FRAMEWORK_SEARCH_PATHS'] << '"$(PODS_ROOT)/../Flutter" '
+      config.build_settings['FRAMEWORK_SEARCH_PATHS'] << '"$(SRCROOT)/Flutter" '
 
-      # 3. 基础兼容性设置
+      # 2. 阿里 SDK 需要的常规兼容配置
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
       config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+      config.build_settings['ENABLE_BITCODE'] = 'NO'
     end
   end
 
-  # 4. 阿里 SDK 导入修复逻辑
+  # 3. 阿里 SDK GeneratedPluginRegistrant 补丁
   reg_m = File.join(Dir.pwd, 'Runner', 'GeneratedPluginRegistrant.m')
   if File.exist?(reg_m)
     content = File.read(reg_m)
     if content.include?('@import flutter_livepush_plugin;')
-      puts "Fixing AliCloud import in GeneratedPluginRegistrant.m..."
+      puts "Podfile: Patching Alivc import..."
       content.gsub!('@import flutter_livepush_plugin;', '#import "AlivcLivePusherPlugin.h"')
       File.open(reg_m, 'w') { |f| f.write(content) }
     end
