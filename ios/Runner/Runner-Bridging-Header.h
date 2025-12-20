@@ -3,7 +3,7 @@
 
 #import "GeneratedPluginRegistrant.h"
 
-// 尝试去掉具体的插件名，直接引用。因为我们已经在 Search Paths 里加了 Classes/**
+// 既然文件已经 cp 到了同一目录，这里直接引用即可
 #import "AlivcLivePusherPlugin.h"
 
 #endif
