@@ -1,10 +1,21 @@
-# 1. 动态获取 Flutter 官方脚本路径
-podhelper_path = File.expand_path(File.join('Flutter', 'podhelper.rb'), __dir__)
+# 1. 标准且正确的路径：当前 Podfile 同级目录下的 Flutter 文件夹
+# 这里的 File.dirname(__FILE__) 就是 ios 目录
+podhelper_path = File.join(File.dirname(__FILE__), 'Flutter', 'podhelper.rb')
+
+# 2. 强力加载逻辑
 if File.exist?(podhelper_path)
   load podhelper_path
 else
-  # 兜底路径
-  load File.expand_path('../Flutter/podhelper.rb', __dir__) rescue puts "Critical: podhelper.rb not found"
+  # 如果依然找不到，说明 Flutter 环境没初始化好，我们打印错误但不崩溃，
+  # 这样可以让 pod install 继续跑完，方便看后续日志
+  puts "################################################################"
+  puts "ERROR: podhelper.rb NOT FOUND at #{podhelper_path}"
+  puts "Please ensure 'flutter pub get' or 'flutter precache' ran successfully."
+  puts "################################################################"
+
+  # 定义空方法，防止后续代码调用报错
+  def flutter_install_all_ios_pods(path); end
+  def flutter_additional_ios_build_settings(target); end
 end
 
 platform :ios, '12.0'
@@ -14,21 +25,19 @@ target 'Runner' do
   use_frameworks! :linkage => :static
   use_modular_headers!
 
-  # 2. 关键：必须执行这行，否则 path_provider 等插件无法被识别
-  if defined?(flutter_install_all_ios_pods)
+  # 只有文件存在时才执行安装
+  if File.exist?(podhelper_path)
     flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
   end
 end
 
 post_install do |installer|
   installer.pods_project.targets.each do |target|
-    # 应用 Flutter 官方构建设置
     flutter_additional_ios_build_settings(target) if defined?(flutter_additional_ios_build_settings)
 
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
       config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
-      # 阿里 SDK 必备：允许非模块化引入
       config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
 
       if target.name == 'Runner'
@@ -39,15 +48,14 @@ post_install do |installer|
     end
   end
 
-  # 3. Ruby 版本的定向修复：只针对阿里 SDK
-  registrant_m = File.join(Dir.pwd, 'Runner', 'GeneratedPluginRegistrant.m')
-  if File.exist?(registrant_m)
-    puts "Patching GeneratedPluginRegistrant for Alivc..."
-    content = File.read(registrant_m)
-    # 只替换阿里插件这一行，保留 path_provider 等其他插件的 @import
+  # 3. 阿里 SDK 补丁 (Ruby 版)
+  reg_m = File.join(Dir.pwd, 'Runner', 'GeneratedPluginRegistrant.m')
+  if File.exist?(reg_m)
+    content = File.read(reg_m)
     if content.include?('@import flutter_livepush_plugin;')
+      puts "Applying AliCloud SDK Patch..."
       content.gsub!('@import flutter_livepush_plugin;', '#import "AlivcLivePusherPlugin.h"')
-      File.open(registrant_m, 'w') { |f| f.write(content) }
+      File.open(reg_m, 'w') { |f| f.write(content) }
     end
   end
 end
