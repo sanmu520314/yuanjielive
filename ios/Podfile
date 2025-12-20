@@ -4,7 +4,7 @@ load podhelper_path if File.exist?(podhelper_path)
 platform :ios, '12.0'
 
 target 'Runner' do
-  # 阿里 SDK 必须使用静态链接
+  # 阿里 SDK 必须开启静态链接
   use_frameworks! :linkage => :static
   use_modular_headers!
 
@@ -13,25 +13,28 @@ end
 
 post_install do |installer|
   installer.pods_project.targets.each do |target|
-    # 1. 应用 Flutter 默认设置
+    # 应用 Flutter 官方的基本设置
     flutter_additional_ios_build_settings(target) if defined?(flutter_additional_ios_build_settings)
 
     target.build_configurations.each do |config|
-      # 2. 核心修复：手动注入 Flutter 头文件和框架搜索路径
-      # $(PODS_ROOT)/../Flutter 指向项目中的 ios/Flutter 目录
+      # 1. 核心修复：手动注入 Flutter 头文件搜索路径
+      # $(PODS_ROOT) 是 ios/Pods，向上退一级就是 ios/Flutter
       config.build_settings['HEADER_SEARCH_PATHS'] ||= '$(inherited) '
       config.build_settings['HEADER_SEARCH_PATHS'] << '"$(PODS_ROOT)/../Flutter/Flutter.framework/Headers" '
+      config.build_settings['HEADER_SEARCH_PATHS'] << '"$(SRCROOT)/Flutter/Flutter.framework/Headers" '
 
+      # 2. 注入框架搜索路径，确保能链接到 Flutter.framework 实体
       config.build_settings['FRAMEWORK_SEARCH_PATHS'] ||= '$(inherited) '
       config.build_settings['FRAMEWORK_SEARCH_PATHS'] << '"$(PODS_ROOT)/../Flutter" '
+      config.build_settings['FRAMEWORK_SEARCH_PATHS'] << '"$(SRCROOT)/Flutter" '
 
-      # 3. 兼容性清理
+      # 3. 开启非模块化包含，允许 Objective-C 框架在静态链接时互相访问
       config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
     end
   end
 
-  # 4. 阿里 SDK 导入修复逻辑（继续保留）
+  # 4. 阿里 SDK 补丁逻辑
   reg_m = File.join(Dir.pwd, 'Runner', 'GeneratedPluginRegistrant.m')
   if File.exist?(reg_m)
     content = File.read(reg_m)
