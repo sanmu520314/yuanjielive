@@ -12,26 +12,29 @@ end
 
 post_install do |installer|
   installer.pods_project.targets.each do |target|
-    # 1. 应用 Flutter 官方的基本设置
     flutter_additional_ios_build_settings(target) if defined?(flutter_additional_ios_build_settings)
 
     target.build_configurations.each do |config|
-      # 2. 修复 'Flutter/Flutter.h' not found 的核心代码
-      # 将 Flutter.framework 的路径加入搜索路径
+      # 1. 解决 Flutter/Flutter.h 找不到的关键：强制添加搜索路径
+      # $(SRCROOT)/../Flutter 是指向 Flutter 引擎所在目录的标准路径
       config.build_settings['HEADER_SEARCH_PATHS'] ||= '$(inherited) '
-      config.build_settings['HEADER_SEARCH_PATHS'] << '"$(SRCROOT)/Flutter" '
+      config.build_settings['HEADER_SEARCH_PATHS'] << '"$(SRCROOT)/../Flutter/Flutter.framework/Headers" '
 
-      # 3. 其他常规设置
+      config.build_settings['FRAMEWORK_SEARCH_PATHS'] ||= '$(inherited) '
+      config.build_settings['FRAMEWORK_SEARCH_PATHS'] << '"$(SRCROOT)/../Flutter" '
+
+      # 2. 常规兼容性设置
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
       config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
     end
   end
 
-  # 4. 阿里 SDK 修正逻辑
+  # 3. 阿里 SDK 导入修正脚本
   reg_m = File.join(Dir.pwd, 'Runner', 'GeneratedPluginRegistrant.m')
   if File.exist?(reg_m)
     content = File.read(reg_m)
     if content.include?('@import flutter_livepush_plugin;')
+      puts "Fixing AliCloud import in GeneratedPluginRegistrant.m..."
       content.gsub!('@import flutter_livepush_plugin;', '#import "AlivcLivePusherPlugin.h"')
       File.open(reg_m, 'w') { |f| f.write(content) }
     end
