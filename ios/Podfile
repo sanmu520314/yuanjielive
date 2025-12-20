@@ -19,15 +19,6 @@ target 'Runner' do
 end
 
 post_install do |installer|
-  # 增强路径搜索：火力覆盖
-  extra_search_paths = [
-    '"$(SRCROOT)/Pods/Headers/Public"',
-    '"$(SRCROOT)/Pods/Headers/Public/flutter_livepush_plugin"',
-    '"$(SRCROOT)/Pods/Headers/Public/AliVCSDK_InteractiveLive"',
-    '"$(SRCROOT)/Pods/AliVCSDK_InteractiveLive/**"',
-    '"$(SRCROOT)/Pods/flutter_livepush_plugin/**"'
-  ]
-
   installer.pods_project.targets.each do |target|
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
@@ -35,16 +26,22 @@ post_install do |installer|
       config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
 
       if target.name == 'Runner'
+        # 1. 注入桥接头文件路径
+        config.build_settings['SWIFT_OBJC_BRIDGING_HEADER'] = 'Runner/Runner-Bridging-Header.h'
+
+        # 2. 增强头文件搜索路径
         config.build_settings['HEADER_SEARCH_PATHS'] ||= '$(inherited) '
-        extra_search_paths.each { |path| config.build_settings['HEADER_SEARCH_PATHS'] << "#{path} " }
+        config.build_settings['HEADER_SEARCH_PATHS'] << '"$(SRCROOT)/Pods/Headers/Public/**" '
+        config.build_settings['HEADER_SEARCH_PATHS'] << '"$(SRCROOT)/Pods/flutter_livepush_plugin/**" '
       end
     end
   end
 
-  # 实时修正 GeneratedPluginRegistrant.m
+  # 3. 实时补丁：继续强改 GeneratedPluginRegistrant.m
   registrant_path = File.join(File.dirname(__FILE__), 'Runner', 'GeneratedPluginRegistrant.m')
   if File.exist?(registrant_path)
     contents = File.read(registrant_path)
+    # 将报错的 @import 替换为 #import
     contents.gsub!(/@import\s+flutter_livepush_plugin;/, '#import "AlivcLivePusherPlugin.h"')
     File.open(registrant_path, 'w') { |file| file.puts contents }
   end
