@@ -10,8 +10,12 @@ target 'Runner' do
   use_frameworks! :linkage => :static
   use_modular_headers!
 
-  # 1. 阿里原生 SDK (远程拉取)
-  pod 'AlivcLivePusher_Interactive', '6.17.0'
+    # 1. 尝试升级到 7.1.0 互动全功能版
+  pod 'AlivcLivePusher_Interactive', '7.1.0'
+
+  # 2. 核心补丁：显式引入互动组件
+  # 有时候主包没能正确 link 子模块，手动加上这两个
+  pod 'AlivcLivePusher_Interactive_Common', '7.1.0'
 
   # 2. 自动安装所有插件 (使用上面定义的智能探测函数)
   flutter_install_all_ios_pods(File.dirname(File.realpath(__FILE__)))
