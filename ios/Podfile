@@ -25,39 +25,30 @@ target 'Runner' do
 end
 
 post_install do |installer|
-  # --- 补丁 A: 物理拷贝头文件（解决 Bridging Header 找不到文件的问题） ---
-  puts "Checking for AlivcLivePusherPlugin.h..."
-  # 在 Pods 目录下递归搜索
-  found_h = Dir.glob("#{Dir.pwd}/Pods/**/AlivcLivePusherPlugin.h").first
-  if found_h
-    dest_h = File.join(Dir.pwd, 'Runner', 'AlivcLivePusherPlugin.h')
-    puts "Copying header: #{found_h} -> #{dest_h}"
-    require 'fileutils'
-    FileUtils.cp(found_h, dest_h)
-  end
-
-  # --- 补丁 B: 修正构建设置 ---
   installer.pods_project.targets.each do |target|
-    flutter_additional_ios_build_settings(target) if defined?(flutter_additional_ios_build_settings)
+    flutter_additional_ios_build_settings(target) rescue nil
 
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
       config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
-      # 阿里 SDK 必备：允许非模块化引入
+
+      # 阿里 SDK 必备
       config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
 
       if target.name == 'Runner'
         config.build_settings['SWIFT_OBJC_BRIDGING_HEADER'] = 'Runner/Runner-Bridging-Header.h'
+        # 强制搜索 Runner 文件夹
         config.build_settings['HEADER_SEARCH_PATHS'] ||= '$(inherited) '
         config.build_settings['HEADER_SEARCH_PATHS'] << '"$(SRCROOT)/Runner" '
+        # 补上一条 Pods 里的递归路径
+        config.build_settings['HEADER_SEARCH_PATHS'] << '"$(SRCROOT)/Pods/**" '
       end
     end
   end
 
-  # --- 补丁 C: 强改 GeneratedPluginRegistrant.m ---
+  # 修复自动生成的注册文件
   registrant_m = File.join(Dir.pwd, 'Runner', 'GeneratedPluginRegistrant.m')
   if File.exist?(registrant_m)
-    puts "Patching GeneratedPluginRegistrant.m..."
     content = File.read(registrant_m)
     # 将 @import 改为 #import "..."
     content.gsub!(/@import\s+flutter_livepush_plugin;/, '#import "AlivcLivePusherPlugin.h"')
