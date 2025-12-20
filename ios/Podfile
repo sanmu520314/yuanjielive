@@ -16,10 +16,6 @@ target 'Runner' do
 end
 
 post_install do |installer|
-  # 获取插件头文件的真实物理路径
-  # 这里的路径通常在 Pods 目录下的这个位置
-  plugin_header_path = '"$(SRCROOT)/Pods/Headers/Public/flutter_livepush_plugin"'
-
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target) rescue nil
 
@@ -27,23 +23,25 @@ post_install do |installer|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
       config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
 
-      # 关键修复：允许搜索非模块头文件并添加路径
+      # 允许非模块化引入，这对阿里 SDK 这种老旧静态库至关重要
       config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
 
-      # 只有主项目 Runner 需要知道插件头文件的位置
+      # 针对主项目 Runner，手动注入插件头文件路径
       if target.name == 'Runner'
+        # 这行代码会将插件的所有公共头文件路径加入搜索范围
         config.build_settings['HEADER_SEARCH_PATHS'] ||= '$(inherited) '
-        config.build_settings['HEADER_SEARCH_PATHS'] << plugin_header_path
+        config.build_settings['HEADER_SEARCH_PATHS'] << '"$(SRCROOT)/Pods/Headers/Public/flutter_livepush_plugin" '
+        config.build_settings['HEADER_SEARCH_PATHS'] << '"$(SRCROOT)/Pods/Headers/Public/AliVCSDK_InteractiveLive" '
       end
     end
   end
 
-  # --- 保持之前的实时补丁 ---
+  # --- 保持对 GeneratedPluginRegistrant 的实时强改 ---
   registrant_path = File.join(File.dirname(__FILE__), 'Runner', 'GeneratedPluginRegistrant.m')
   if File.exist?(registrant_path)
     puts "Applying post_install patch to GeneratedPluginRegistrant.m..."
     contents = File.read(registrant_path)
-    # 如果插件是通过 Pods 安装的，通常需要这样引用
+    # 尝试使用引号包含的 import 方式，这是处理静态头文件的最稳妥方案
     contents.gsub!('@import flutter_livepush_plugin;', '#import "AlivcLivePusherPlugin.h"')
     File.open(registrant_path, 'w') { |file| file.puts contents }
   end
