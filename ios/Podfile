@@ -1,14 +1,11 @@
-# 1. 自动定位官方脚本路径
-def load_podhelper
-  podhelper_path = File.expand_path(File.join('Flutter', 'podhelper.rb'), __dir__)
-  if File.exist?(podhelper_path)
-    load podhelper_path
-    return true
-  end
-  false
+# 1. 动态获取 Flutter 官方脚本路径
+podhelper_path = File.expand_path(File.join('Flutter', 'podhelper.rb'), __dir__)
+if File.exist?(podhelper_path)
+  load podhelper_path
+else
+  # 兜底路径
+  load File.expand_path('../Flutter/podhelper.rb', __dir__) rescue puts "Critical: podhelper.rb not found"
 end
-
-has_flutter_helper = load_podhelper
 
 platform :ios, '12.0'
 
@@ -17,15 +14,15 @@ target 'Runner' do
   use_frameworks! :linkage => :static
   use_modular_headers!
 
-  # 2. 关键：必须安装所有插件，否则会报 path_provider 找不到
-  if has_flutter_helper
+  # 2. 关键：必须执行这行，否则 path_provider 等插件无法被识别
+  if defined?(flutter_install_all_ios_pods)
     flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
   end
 end
 
 post_install do |installer|
   installer.pods_project.targets.each do |target|
-    # 应用官方构建设置
+    # 应用 Flutter 官方构建设置
     flutter_additional_ios_build_settings(target) if defined?(flutter_additional_ios_build_settings)
 
     target.build_configurations.each do |config|
@@ -42,15 +39,15 @@ post_install do |installer|
     end
   end
 
-  # 3. 针对阿里插件的精准修复 (Ruby 版)
-  # 只把阿里这一行从 @import 改为 #import，不破坏其他插件
-  reg_m = File.join(Dir.pwd, 'Runner', 'GeneratedPluginRegistrant.m')
-  if File.exist?(reg_m)
-    content = File.read(reg_m)
+  # 3. Ruby 版本的定向修复：只针对阿里 SDK
+  registrant_m = File.join(Dir.pwd, 'Runner', 'GeneratedPluginRegistrant.m')
+  if File.exist?(registrant_m)
+    puts "Patching GeneratedPluginRegistrant for Alivc..."
+    content = File.read(registrant_m)
+    # 只替换阿里插件这一行，保留 path_provider 等其他插件的 @import
     if content.include?('@import flutter_livepush_plugin;')
       content.gsub!('@import flutter_livepush_plugin;', '#import "AlivcLivePusherPlugin.h"')
-      File.open(reg_m, 'w') { |f| f.write(content) }
-      puts "SUCCESS: Alivc patch applied to Registrant."
+      File.open(registrant_m, 'w') { |f| f.write(content) }
     end
   end
 end
