@@ -2,7 +2,8 @@
 #define Runner_Bridging_Header_h
 
 #import "GeneratedPluginRegistrant.h"
-// 因为 AlivcLivePusherPlugin.h 就在同级目录下，直接引用
-#import "AlivcLivePusherPlugin.h"
+
+// 使用当前头文件所在目录的相对路径直接寻找
+#include "./AlivcLivePusherPlugin.h"
 
 #endif

@@ -25,30 +25,37 @@ target 'Runner' do
 end
 
 post_install do |installer|
+  # 获取 Runner 目录的绝对路径
+  runner_dir = File.join(Dir.pwd, 'Runner')
+
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target) rescue nil
 
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
       config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
-
-      # 阿里 SDK 必备：允许非模块化引入
       config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
 
       if target.name == 'Runner'
         config.build_settings['SWIFT_OBJC_BRIDGING_HEADER'] = 'Runner/Runner-Bridging-Header.h'
-        # 强制将 Runner 目录设为最高优先级搜索路径
+
+        # 核心：同时注入 HEADER_SEARCH_PATHS 和 USER_HEADER_SEARCH_PATHS
         config.build_settings['HEADER_SEARCH_PATHS'] ||= '$(inherited) '
-        config.build_settings['HEADER_SEARCH_PATHS'] << '"$(SRCROOT)/Runner" '
+        config.build_settings['HEADER_SEARCH_PATHS'] << "\"#{runner_dir}\" "
+
+        config.build_settings['USER_HEADER_SEARCH_PATHS'] ||= '$(inherited) '
+        config.build_settings['USER_HEADER_SEARCH_PATHS'] << "\"#{runner_dir}\" "
+
+        # 允许搜索子目录
+        config.build_settings['ALWAYS_SEARCH_USER_PATHS'] = 'YES'
       end
     end
   end
 
-  # 实时修复 GeneratedPluginRegistrant.m
-  registrant_m = File.join(Dir.pwd, 'Runner', 'GeneratedPluginRegistrant.m')
+  # 继续保持对 GeneratedPluginRegistrant.m 的修正
+  registrant_m = File.join(runner_dir, 'GeneratedPluginRegistrant.m')
   if File.exist?(registrant_m)
     content = File.read(registrant_m)
-    # 将报错的 @import 强行替换为本地 #import
     content.gsub!(/@import\s+flutter_livepush_plugin;/, '#import "AlivcLivePusherPlugin.h"')
     File.open(registrant_m, 'w') { |f| f.write(content) }
   end
