@@ -34,10 +34,11 @@ post_install do |installer|
     flutter_additional_ios_build_settings(target) if defined?(flutter_additional_ios_build_settings)
 
     target.build_configurations.each do |config|
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
+      # 统一版本，解决阿里 SDK 低版本不兼容问题
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+      # 排除模拟器架构干扰
       config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
-
-      # 阿里 SDK 核心设置：允许非模块化引入
+      # 允许非模块化引入 (阿里 SDK 核心)
       config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
 
       if target.name == 'Runner'
@@ -48,13 +49,17 @@ post_install do |installer|
     end
   end
 
-  # 3. 针对阿里插件的精准手术：修复注册文件
+  # 实时修复 GeneratedPluginRegistrant.m
+  # 使用 Ruby 原生操作避免 Shell 命令在 CI 上的兼容性问题
   registrant_m = File.join(Dir.pwd, 'Runner', 'GeneratedPluginRegistrant.m')
   if File.exist?(registrant_m)
-    puts "Patching GeneratedPluginRegistrant.m..."
+    puts "ACTION: Patching GeneratedPluginRegistrant.m via Ruby..."
     content = File.read(registrant_m)
-    # 只改阿里插件这一行，不破坏 path_provider 等其他插件的 @import
-    content.gsub!(/@import\s+flutter_livepush_plugin;/, '#import "AlivcLivePusherPlugin.h"')
-    File.open(registrant_m, 'w') { |f| f.write(content) }
+    # 精准替换：只替换报错的那一行
+    if content.include?('@import flutter_livepush_plugin;')
+      content.gsub!('@import flutter_livepush_plugin;', '#import "AlivcLivePusherPlugin.h"')
+      File.open(registrant_m, 'w') { |f| f.write(content) }
+      puts "SUCCESS: Registrant patched."
+    end
   end
 end
