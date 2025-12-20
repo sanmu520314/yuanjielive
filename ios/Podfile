@@ -1,50 +1,37 @@
-# 1. 终极路径搜索
-def find_podhelper
-  # 路径候选列表：针对 Codemagic 环境优化
-  candidates = [
-    File.join(File.dirname(__FILE__), 'Flutter', 'podhelper.rb'), # 标准路径
-    File.expand_path('Flutter/podhelper.rb', File.dirname(__FILE__)),
-    "#{Dir.pwd}/ios/Flutter/podhelper.rb",
-    "#{Dir.pwd}/Flutter/podhelper.rb"
-  ]
-
-  candidates.each do |path|
-    if File.exist?(path)
-      puts "SUCCESS: Found podhelper.rb at #{path}"
-      return path
-    end
+# 1. 自动定位官方脚本路径
+def load_podhelper
+  podhelper_path = File.expand_path(File.join('Flutter', 'podhelper.rb'), __dir__)
+  if File.exist?(podhelper_path)
+    load podhelper_path
+    return true
   end
-  nil
+  false
 end
 
-podhelper_path = find_podhelper
-
-if podhelper_path
-  load podhelper_path
-else
-  puts "WARNING: podhelper.rb NOT FOUND!"
-  # 定义空方法防止后续崩溃
-  def flutter_install_all_ios_pods(path); end
-  def flutter_additional_ios_build_settings(target); end
-end
+has_flutter_helper = load_podhelper
 
 platform :ios, '12.0'
 
 target 'Runner' do
+  # 阿里 SDK 要求静态链接
   use_frameworks! :linkage => :static
   use_modular_headers!
 
-  if podhelper_path
+  # 2. 关键：必须安装所有插件，否则会报 path_provider 找不到
+  if has_flutter_helper
     flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
   end
 end
 
 post_install do |installer|
   installer.pods_project.targets.each do |target|
+    # 应用官方构建设置
     flutter_additional_ios_build_settings(target) if defined?(flutter_additional_ios_build_settings)
 
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
+      config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
+      # 阿里 SDK 必备：允许非模块化引入
       config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
 
       if target.name == 'Runner'
@@ -55,13 +42,15 @@ post_install do |installer|
     end
   end
 
-  # Ruby 版本的 GeneratedPluginRegistrant 修复
+  # 3. 针对阿里插件的精准修复 (Ruby 版)
+  # 只把阿里这一行从 @import 改为 #import，不破坏其他插件
   reg_m = File.join(Dir.pwd, 'Runner', 'GeneratedPluginRegistrant.m')
   if File.exist?(reg_m)
     content = File.read(reg_m)
     if content.include?('@import flutter_livepush_plugin;')
       content.gsub!('@import flutter_livepush_plugin;', '#import "AlivcLivePusherPlugin.h"')
       File.open(reg_m, 'w') { |f| f.write(content) }
+      puts "SUCCESS: Alivc patch applied to Registrant."
     end
   end
 end
