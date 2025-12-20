@@ -23,26 +23,30 @@ post_install do |installer|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
       config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
 
-      # 1. 关键修复：允许搜索所有非模块头文件
+      # 开启非模块化包含
       config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
 
-      # 2. 暴力搜索：让主项目递归搜索整个 Pods 目录下的所有头文件
+      # 强制添加所有可能的头文件路径
       if target.name == 'Runner'
         config.build_settings['HEADER_SEARCH_PATHS'] ||= '$(inherited) '
-        # 加入递归搜索路径，注意末尾的 ** 表示递归
-        config.build_settings['HEADER_SEARCH_PATHS'] << '"$(SRCROOT)/Pods/Headers/Public/**" '
-        config.build_settings['HEADER_SEARCH_PATHS'] << '"$(SRCROOT)/Pods/Headers/Private/**" '
+        # 增加这三个路径，基本覆盖了静态库在 Pods 中的所有存在形式
+        config.build_settings['HEADER_SEARCH_PATHS'] << '"$(SRCROOT)/Pods/Headers/Public" '
+        config.build_settings['HEADER_SEARCH_PATHS'] << '"$(SRCROOT)/Pods/Headers/Public/flutter_livepush_plugin" '
+        config.build_settings['HEADER_SEARCH_PATHS'] << '"$(SRCROOT)/Pods/flutter_livepush_plugin/ios/Classes" '
       end
     end
   end
 
-  # --- 3. 实时补丁：优化 import 语法 ---
+  # --- 修正代码导入语法 ---
   registrant_path = File.join(File.dirname(__FILE__), 'Runner', 'GeneratedPluginRegistrant.m')
   if File.exist?(registrant_path)
     puts "Applying post_install patch to GeneratedPluginRegistrant.m..."
     contents = File.read(registrant_path)
-    # 尝试使用 <插件名/头文件.h> 的标准格式，这种格式在 Search Paths 生效时兼容性最好
-    contents.gsub!('@import flutter_livepush_plugin;', '#import <flutter_livepush_plugin/AlivcLivePusherPlugin.h>')
+    # 放弃尖括号，改回引号。因为我们在 HEADER_SEARCH_PATHS 里已经加了具体路径
+    # 这样 Xcode 只要在搜索路径里看到这个文件，就能直接 import 进来
+    contents.gsub!('@import flutter_livepush_plugin;', '#import "AlivcLivePusherPlugin.h"')
+    # 顺便把可能有冲突的引用的也清理一下
+    contents.gsub!('<flutter_livepush_plugin/AlivcLivePusherPlugin.h>', '"AlivcLivePusherPlugin.h"')
     File.open(registrant_path, 'w') { |file| file.puts contents }
   end
 end
