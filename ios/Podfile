@@ -26,22 +26,24 @@ post_install do |installer|
       config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
 
       if target.name == 'Runner'
-        # 1. 注入桥接头文件路径
         config.build_settings['SWIFT_OBJC_BRIDGING_HEADER'] = 'Runner/Runner-Bridging-Header.h'
 
-        # 2. 增强头文件搜索路径
+        # 核心修正：使用递归搜索并覆盖所有 Pods 公共头文件
         config.build_settings['HEADER_SEARCH_PATHS'] ||= '$(inherited) '
+        # 1. 覆盖 Pods 根目录下的所有公共头文件
         config.build_settings['HEADER_SEARCH_PATHS'] << '"$(SRCROOT)/Pods/Headers/Public/**" '
-        config.build_settings['HEADER_SEARCH_PATHS'] << '"$(SRCROOT)/Pods/flutter_livepush_plugin/**" '
+        # 2. 覆盖插件原始代码目录 (防止符号链接失效)
+        config.build_settings['HEADER_SEARCH_PATHS'] << '"$(SRCROOT)/Pods/flutter_livepush_plugin/ios/Classes/**" '
+        # 3. 覆盖阿里 SDK 目录
+        config.build_settings['HEADER_SEARCH_PATHS'] << '"$(SRCROOT)/Pods/AliVCSDK_InteractiveLive/**" '
       end
     end
   end
 
-  # 3. 实时补丁：继续强改 GeneratedPluginRegistrant.m
+  # 保持对 GeneratedPluginRegistrant 的实时修改（防止双重报错）
   registrant_path = File.join(File.dirname(__FILE__), 'Runner', 'GeneratedPluginRegistrant.m')
   if File.exist?(registrant_path)
     contents = File.read(registrant_path)
-    # 将报错的 @import 替换为 #import
     contents.gsub!(/@import\s+flutter_livepush_plugin;/, '#import "AlivcLivePusherPlugin.h"')
     File.open(registrant_path, 'w') { |file| file.puts contents }
   end
