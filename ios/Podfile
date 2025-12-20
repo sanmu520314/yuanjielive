@@ -1,4 +1,3 @@
-# 1. 指向注入的文件
 podhelper_path = File.join(__dir__, 'Flutter', 'podhelper.rb')
 load podhelper_path if File.exist?(podhelper_path)
 
@@ -8,8 +7,8 @@ target 'Runner' do
   use_frameworks! :linkage => :static
   use_modular_headers!
 
-  # 2. 安装所有插件
-  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+  # 显式传入当前 ios 目录的路径
+  flutter_install_all_ios_pods(File.dirname(File.realpath(__FILE__)))
 end
 
 post_install do |installer|
@@ -19,16 +18,10 @@ post_install do |installer|
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
       config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
-
-      if target.name == 'Runner'
-        config.build_settings['SWIFT_OBJC_BRIDGING_HEADER'] = 'Runner/Runner-Bridging-Header.h'
-        config.build_settings['HEADER_SEARCH_PATHS'] ||= '$(inherited) '
-        config.build_settings['HEADER_SEARCH_PATHS'] << '"$(SRCROOT)/Runner" '
-      end
     end
   end
 
-  # 3. 阿里 SDK 修正
+  # 阿里补丁
   reg_m = File.join(Dir.pwd, 'Runner', 'GeneratedPluginRegistrant.m')
   if File.exist?(reg_m)
     content = File.read(reg_m)
