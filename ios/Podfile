@@ -1,13 +1,13 @@
-# 1. 强制定位真正的 podhelper.rb
-# __dir__ 是 ios/ 目录，所以我们要找 ios/Flutter/podhelper.rb
-podhelper_path = File.expand_path('Flutter/podhelper.rb', __dir__)
+# 1. 标准路径加载
+# 这里的 __dir__ 就是 ios 目录
+podhelper_path = File.join(__dir__, 'Flutter', 'podhelper.rb')
 
-# 调试打印，看看究竟找对了没
-puts "DEBUG: Looking for podhelper at: #{podhelper_path}"
+# 调试日志
+puts "Checking podhelper at: #{podhelper_path}"
 
+# 此时文件必须存在，因为 Pre-build 脚本刚刚强制复制了它
 unless File.exist?(podhelper_path)
-  # 如果找不到，直接抛错，不要假装成功，否则后面编译必挂
-  raise "CRITICAL ERROR: podhelper.rb not found! Run 'flutter pub get' first."
+  raise "CRITICAL: podhelper.rb is missing even after Pre-build script!"
 end
 
 load podhelper_path
@@ -15,11 +15,10 @@ load podhelper_path
 platform :ios, '12.0'
 
 target 'Runner' do
-  # 阿里 SDK 必须静态链接
   use_frameworks! :linkage => :static
   use_modular_headers!
 
-  # 2. 安装插件 (这是 path_provider 能工作的关键)
+  # 2. 安装所有插件 (path_provider 的救星)
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
 end
 
@@ -40,15 +39,14 @@ post_install do |installer|
     end
   end
 
-  # 3. 阿里 SDK 补丁 (GeneratedPluginRegistrant.m)
+  # 3. 阿里 SDK 导入修复
   reg_m = File.join(Dir.pwd, 'Runner', 'GeneratedPluginRegistrant.m')
   if File.exist?(reg_m)
-    puts "DEBUG: Patching GeneratedPluginRegistrant..."
     content = File.read(reg_m)
     if content.include?('@import flutter_livepush_plugin;')
+      puts "Podfile: Patching Alivc import..."
       content.gsub!('@import flutter_livepush_plugin;', '#import "AlivcLivePusherPlugin.h"')
       File.open(reg_m, 'w') { |f| f.write(content) }
-      puts "SUCCESS: Patched Alivc import."
     end
   end
 end
