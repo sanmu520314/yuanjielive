@@ -1,50 +1,59 @@
-# 1. 动态加载 Flutter 官方脚本，确保路径正确
-podhelper_path = File.expand_path(File.join('Flutter', 'podhelper.rb'), __dir__)
-if File.exist?(podhelper_path)
-  load podhelper_path
-else
-  # 如果加载失败，尝试上层目录
-  load File.expand_path('../Flutter/podhelper.rb', __dir__)
+# 1. 自动定位 Flutter 官方脚本路径
+# 确保无论在本地还是 CI 环境都能精准加载
+def load_flutter_podhelper
+  # 路径逻辑：当前文件(ios/Podfile) 同级目录下的 Flutter/podhelper.rb
+  podhelper_path = File.expand_path(File.join('Flutter', 'podhelper.rb'), __dir__)
+
+  if File.exist?(podhelper_path)
+    load podhelper_path
+    return true
+  end
+  puts "Error: podhelper.rb not found at #{podhelper_path}"
+  false
 end
+
+# 执行加载
+has_flutter_helper = load_flutter_podhelper
 
 platform :ios, '12.0'
 
 target 'Runner' do
-  # 阿里 SDK 要求静态链接
+  # 阿里 SDK 必须使用静态链接
   use_frameworks! :linkage => :static
   use_modular_headers!
 
-  # 2. 这行是安装 path_provider 等所有插件的关键
-  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+  # 2. 安装所有 Flutter 插件（这会解决 path_provider 等找不到的问题）
+  if has_flutter_helper
+    flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+  end
 end
 
 post_install do |installer|
   installer.pods_project.targets.each do |target|
-    # 执行 Flutter 官方的构建设置
+    # 应用 Flutter 官方构建设置
     flutter_additional_ios_build_settings(target) if defined?(flutter_additional_ios_build_settings)
 
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
       config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
-      # 阿里 SDK 必备设置
+
+      # 阿里 SDK 核心设置：允许非模块化引入
       config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
 
       if target.name == 'Runner'
         config.build_settings['SWIFT_OBJC_BRIDGING_HEADER'] = 'Runner/Runner-Bridging-Header.h'
         config.build_settings['HEADER_SEARCH_PATHS'] ||= '$(inherited) '
-        # 搜索 Runner 目录，因为我们在那生成了占位头文件
         config.build_settings['HEADER_SEARCH_PATHS'] << '"$(SRCROOT)/Runner" '
       end
     end
   end
 
-  # 3. 定向手术：只修改 GeneratedPluginRegistrant.m
-  # 这样 path_provider 的 @import 不会被破坏，只有阿里插件会被改为 #import
+  # 3. 针对阿里插件的精准手术：修复注册文件
   registrant_m = File.join(Dir.pwd, 'Runner', 'GeneratedPluginRegistrant.m')
   if File.exist?(registrant_m)
-    puts "Patching GeneratedPluginRegistrant.m for Alivc SDK..."
+    puts "Patching GeneratedPluginRegistrant.m..."
     content = File.read(registrant_m)
-    # 仅将阿里插件这一行从 @import 改为 #import
+    # 只改阿里插件这一行，不破坏 path_provider 等其他插件的 @import
     content.gsub!(/@import\s+flutter_livepush_plugin;/, '#import "AlivcLivePusherPlugin.h"')
     File.open(registrant_m, 'w') { |f| f.write(content) }
   end
