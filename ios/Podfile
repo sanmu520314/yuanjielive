@@ -10,11 +10,14 @@ target 'Runner' do
   use_frameworks! :linkage => :static
   use_modular_headers!
 
-  # 修复：显式引用阿里直播 SDK。
-  # 建议根据你的需求选择版本。如果 6.17.0 报错，可以尝试 7.0.0
-  # 这里我们选择 Interactive 版本（支持连麦）
-  pod 'flutter_livepush_plugin', '7.0.0'
+ # 1. 引用互动直播全功能版
+   pod 'AlivcLivePusher_Interactive', '6.17.0'
 
+   # 2. 显式引用美颜库，解决 LiveBeautyFactory.h 找不到类型的问题
+   pod 'AlivcLibBeauty', '6.17.0'
+   pod 'AlivcLibFace', '6.17.0'
+
+  # 调用脚本中注入的自动安装函数
   flutter_install_all_ios_pods(File.dirname(File.realpath(__FILE__)))
 end
 
