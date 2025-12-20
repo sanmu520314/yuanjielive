@@ -1,0 +1,25 @@
+# ios/Podfile
+
+platform :ios, '12.0'
+
+# 关键：不使用 use_frameworks!，改用静态链接
+# 这样才能兼容 AliVCSDK_InteractiveLive 这类静态库
+
+project 'Runner.xcodeproj'
+
+target 'Runner' do
+  # 注意：这里不要写 use_frameworks!
+  # Flutter 会自动处理插件集成
+
+  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+end
+
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
+      # 阿里云 SDK 可能需要关闭 bitcode
+      config.build_settings['ENABLE_BITCODE'] = 'NO'
+    end
+  end
+end
