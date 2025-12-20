@@ -21,6 +21,20 @@ target 'Runner' do
 end
 
  post_install do |installer|
+ # --- 新增：物理拷贝头文件逻辑 ---
+   puts "Searching for AlivcLivePusherPlugin.h inside Pods..."
+   # 在 Pods 目录下递归寻找头文件
+   header_path = Dir.glob("#{Dir.pwd}/Pods/**/AlivcLivePusherPlugin.h").first
+
+   if header_path
+       dest_path = File.join(Dir.pwd, 'Runner', 'AlivcLivePusherPlugin.h')
+       puts "Copying header from #{header_path} to #{dest_path}"
+       FileUtils.cp(header_path, dest_path)
+     else
+       puts "WARNING: AlivcLivePusherPlugin.h not found. Check if the plugin is added to pubspec.yaml"
+     end
+     # --- 结束拷贝逻辑 ---
+
    # 1. 动态探测插件头文件的物理位置（针对阿里 SDK 这种静态库的路径偏移）
    base_dir = File.join(Dir.pwd, 'Pods')
    found_path = Dir.glob("#{base_dir}/**/AlivcLivePusherPlugin.h").first
