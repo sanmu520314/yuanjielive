@@ -1,31 +1,31 @@
-# ios/Podfile
+# 1. 第一行修改：直接引用 Generated.xcconfig 里的路径
+load File.expand_path(File.join('Flutter', 'generated_executable_build_libraries.rb'), __dir__) rescue nil
+
+# 引入 Flutter 脚本
+load File.expand_path(File.join('Flutter', 'podhelper.rb'), __dir__)
 
 platform :ios, '12.0'
 
-# 关键：不要 use_frameworks!
-# 改用 modular headers 或什么都不写（默认静态链接）
-use_modular_headers!
-
-project 'Runner.xcodeproj'
-
 target 'Runner' do
-  # Flutter 引擎
-  pod 'Flutter', :path => '../Flutter'
+  # 阿里直播 SDK 必须使用静态链接
+  use_frameworks! :linkage => :static
 
-  # 手动列出所有插件（从 .symlinks 路径引用）
-  pod 'flutter_livepush_plugin', :path => '../Flutter/.symlinks/plugins/flutter_livepush_plugin/ios'
-  pod 'permission_handler_apple', :path => '../Flutter/.symlinks/plugins/permission_handler_apple/ios'
-  pod 'shared_preferences_foundation', :path => '../Flutter/.symlinks/plugins/shared_preferences_foundation/ios'
-  pod 'path_provider_foundation', :path => '../Flutter/.symlinks/plugins/path_provider_foundation/ios'
+  use_modular_headers!
 
-  # 如果有其他插件，继续添加...
+  # 这行会自动处理所有插件和 Flutter 框架
+  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
 end
 
 post_install do |installer|
   installer.pods_project.targets.each do |target|
+    flutter_additional_ios_build_settings(target)
+
     target.build_configurations.each do |config|
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
-      config.build_settings['ENABLE_BITCODE'] = 'NO'
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+      # 排除模拟器架构冲突
+      config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
+      # 阿里 SDK 兼容性设置
+      config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
     end
   end
 end
