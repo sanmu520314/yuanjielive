@@ -1,6 +1,5 @@
 source 'https://github.com/CocoaPods/Specs.git'
 
-# 加载我们刚生成的 robust podhelper
 podhelper_path = File.join(__dir__, 'Flutter', 'podhelper.rb')
 load podhelper_path if File.exist?(podhelper_path)
 
@@ -10,46 +9,33 @@ target 'Runner' do
   use_frameworks! :linkage => :static
   use_modular_headers!
 
-    # 1. 尝试升级到 7.1.0 互动全功能版
-  pod 'AlivcLivePusher_Interactive', '7.1.0'
+  # 只用这一个，它是包含所有推流和互动核心类的
+  pod 'AlivcLivePusher_Interactive', '6.17.0'
 
-  # 2. 核心补丁：显式引入互动组件
-  # 有时候主包没能正确 link 子模块，手动加上这两个
-  pod 'AlivcLivePusher_Interactive_Common', '7.1.0'
-
-  # 2. 自动安装所有插件 (使用上面定义的智能探测函数)
   flutter_install_all_ios_pods(File.dirname(File.realpath(__FILE__)))
 end
 
 post_install do |installer|
-  # 获取阿里 SDK 在 Pods 目录下的真实物理路径
-  # 注意：这里假设你用的是 AlivcLivePusher_Interactive
-  ali_sdk_path = '"$(PODS_ROOT)/AlivcLivePusher_Interactive/AlivcLivePusher_Interactive.framework/Headers"'
-
   installer.generated_projects.each do |project|
     project.targets.each do |target|
       target.build_configurations.each do |config|
         config.build_settings['ENABLE_BITCODE'] = 'NO'
         config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
 
-        # 1. 继承原有设置
         config.build_settings['HEADER_SEARCH_PATHS'] ||= '$(inherited) '
-
-        # 2. 注入我们的 Flutter 修复路径
+        # 补丁 1: 我们脚本创建的 Flutter 修复路径
         config.build_settings['HEADER_SEARCH_PATHS'] << '"$(PODS_ROOT)/../Flutter/Fix" '
 
-        # 3. 核心修复：强制注入阿里 SDK 的头文件路径
-        # 这样 LivePushConfigFactory.m 编译时就能找到 AlivcLivePlayConfig.h 了
-        config.build_settings['HEADER_SEARCH_PATHS'] << ali_sdk_path
+        # 补丁 2: 暴力指定阿里 SDK 的头文件物理路径（这是解决 int * 报错的唯一方法）
+        # 注意：这里使用了递归引用 **
+        config.build_settings['HEADER_SEARCH_PATHS'] << '"$(PODS_ROOT)/AlivcLivePusher_Interactive/**" '
 
-        # 4. 允许非模块化包含（静态链接必备）
         config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
-        config.build_settings['OTHER_CPLUSPLUSFLAGS'] = '"$(inherited)" "-Xarch_arm64" "-Wno-quoted-include-in-framework-header"'
       end
     end
   end
 
-  # 保持之前的 GeneratedPluginRegistrant 补丁逻辑
+  # GeneratedPluginRegistrant 补丁
   reg_m = File.join(Dir.pwd, 'Runner', 'GeneratedPluginRegistrant.m')
   if File.exist?(reg_m)
     content = File.read(reg_m)
