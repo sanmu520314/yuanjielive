@@ -1,19 +1,19 @@
 source 'https://github.com/CocoaPods/Specs.git'
 
-# --- 关键：必须 load 脚本生成的 helper ---
+# 加载我们刚生成的 robust podhelper
 podhelper_path = File.join(__dir__, 'Flutter', 'podhelper.rb')
 load podhelper_path if File.exist?(podhelper_path)
 
-platform :ios, '13.0' # 建议统一 13.0
+platform :ios, '13.0'
 
 target 'Runner' do
   use_frameworks! :linkage => :static
   use_modular_headers!
 
-  # 阿里原生库
+  # 1. 阿里原生 SDK (远程拉取)
   pod 'AlivcLivePusher_Interactive', '6.17.0'
 
-  # 插件自动关联（调用 podhelper.rb 里的函数）
+  # 2. 自动安装所有插件 (使用上面定义的智能探测函数)
   flutter_install_all_ios_pods(File.dirname(File.realpath(__FILE__)))
 end
 
@@ -23,15 +23,16 @@ post_install do |installer|
       target.build_configurations.each do |config|
         config.build_settings['ENABLE_BITCODE'] = 'NO'
         config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+        # 核心：修复 Flutter.h 找不到的问题
         config.build_settings['HEADER_SEARCH_PATHS'] ||= '$(inherited) '
         config.build_settings['HEADER_SEARCH_PATHS'] << '"$(PODS_ROOT)/../Flutter/Fix" '
-        # 增加这一行，防止非模块化头文件报错
+        # 核心：解决静态链接下的非模块化头文件包含
         config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
       end
     end
   end
 
-  # 你的 GeneratedPluginRegistrant 补丁
+  # 阿里 SDK 必须的 GeneratedPluginRegistrant 补丁
   reg_m = File.join(Dir.pwd, 'Runner', 'GeneratedPluginRegistrant.m')
   if File.exist?(reg_m)
     content = File.read(reg_m)
