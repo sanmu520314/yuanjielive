@@ -1,4 +1,4 @@
-# 1. 指向刚才注入的文件
+# 1. 指向注入的文件
 podhelper_path = File.join(__dir__, 'Flutter', 'podhelper.rb')
 load podhelper_path if File.exist?(podhelper_path)
 
@@ -8,13 +8,12 @@ target 'Runner' do
   use_frameworks! :linkage => :static
   use_modular_headers!
 
-  # 2. 调用注入的函数安装所有插件（解决 path_provider 问题）
+  # 2. 安装所有插件
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
 end
 
 post_install do |installer|
   installer.pods_project.targets.each do |target|
-    # 调用注入的函数
     flutter_additional_ios_build_settings(target) if defined?(flutter_additional_ios_build_settings)
 
     target.build_configurations.each do |config|
