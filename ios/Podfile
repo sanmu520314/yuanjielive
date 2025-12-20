@@ -1,15 +1,15 @@
 # ios/Podfile
 
-flutter_root = File.expand_path('..', __FILE__)
-load File.join(flutter_root, 'packages', 'flutter_tools', 'bin', 'podhelper.rb')
-
 platform :ios, '12.0'
 
-# 不使用 use_frameworks! 以支持静态库（如 AliVCSDK）
+# Use modular headers instead of frameworks to support static libraries
+use_modular_headers!
+
 project 'Runner.xcodeproj'
 
 target 'Runner' do
-  install_all_flutter_pods flutter_root
+  # Let Flutter handle plugin installation via standard mechanism
+  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
 end
 
 post_install do |installer|
