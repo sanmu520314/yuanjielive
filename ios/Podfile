@@ -1,80 +1,86 @@
-# 1. 彻底移除对外部文件的 load 依赖，手动定义必需的方法
-def flutter_install_all_ios_pods(ios_application_path = nil)
-  # 空实现，防止调用报错
-end
 
-def flutter_additional_ios_build_settings(target)
-  # 空实现，防止调用报错
+
+# 1. 尝试加载 Flutter 的官方脚本
+flutter_install_all_ios_pods_file = File.join('Flutter', 'podhelper.rb')
+if File.exist?(flutter_install_all_ios_pods_file)
+  load flutter_install_all_ios_pods_file
+else
+  # 只有在文件真的不存在时才定义空方法，避免崩溃
+  def flutter_install_all_ios_pods(path); end
+  def flutter_additional_ios_build_settings(target); end
 end
 
 platform :ios, '13.0'
 
 target 'Runner' do
-  # 必须使用静态链接以兼容阿里 SDK
   use_frameworks! :linkage => :static
   use_modular_headers!
 
-  # 这里如果报错，可以暂时注释掉。在 CI 环境中，Codemagic 通常会自动处理插件
-  # flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+  # 2. 必须保留这一行！它是加载所有 Flutter 插件的命门
+  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
 end
 
-post_install do |installer|
-  # 1. 自动定位插件头文件的物理路径（防止 CI 环境路径偏移）
-  base_dir = File.join(Dir.pwd, 'Pods')
-  found_path = Dir.glob("#{base_dir}/**/AlivcLivePusherPlugin.h").first
-  plugin_header_dir = found_path ? File.dirname(found_path) : ""
+ post_install do |installer|
+   # 1. 动态探测插件头文件的物理位置（针对阿里 SDK 这种静态库的路径偏移）
+   base_dir = File.join(Dir.pwd, 'Pods')
+   found_path = Dir.glob("#{base_dir}/**/AlivcLivePusherPlugin.h").first
+   plugin_header_dir = found_path ? File.dirname(found_path) : ""
 
-  puts "------------------------------------------------"
-  if found_path
-    puts "SUCCESS: Found AlivcLivePusherPlugin.h at: #{plugin_header_dir}"
-  else
-    puts "WARNING: Could not find AlivcLivePusherPlugin.h in Pods directory"
-  end
-  puts "------------------------------------------------"
+   puts "------------------------------------------------"
+   if found_path
+     puts "SUCCESS: Found AlivcLivePusherPlugin.h at: #{plugin_header_dir}"
+   else
+     puts "WARNING: Could not find AlivcLivePusherPlugin.h in Pods directory"
+   end
+   puts "------------------------------------------------"
 
-  installer.pods_project.targets.each do |target|
-    # 保持 Flutter 默认的构建设置
-    flutter_additional_ios_build_settings(target) rescue nil
+   installer.pods_project.targets.each do |target|
+     # 应用 Flutter 默认的构建设置
+     flutter_additional_ios_build_settings(target) rescue nil
 
-    target.build_configurations.each do |config|
-      # 统一部署版本和架构设置
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
-      config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
+     target.build_configurations.each do |config|
+       # 统一部署版本，防止 Pod 库版本过低
+       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+       # 修复 M1/M2 芯片编译模拟器时的架构冲突
+       config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
 
-      # 核心开关：允许非模块化引入（阿里 SDK 必备）
-      config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+       # 核心设置：允许非模块化包含（这是解决 Alivc 这种非标准模块 SDK 的关键）
+       config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
 
-      # 2. 针对主项目 Runner 进行增强配置
-      if target.name == 'Runner'
-        # 强制指定桥接头文件路径
-        config.build_settings['SWIFT_OBJC_BRIDGING_HEADER'] = 'Runner/Runner-Bridging-Header.h'
+       # 2. 针对主项目 Runner 进行暴力搜索路径注入
+       if target.name == 'Runner'
+         # 强制配置桥接头文件路径
+         config.build_settings['SWIFT_OBJC_BRIDGING_HEADER'] = 'Runner/Runner-Bridging-Header.h'
 
-        # 注入多重搜索路径，确保编译器能找到头文件
-        config.build_settings['HEADER_SEARCH_PATHS'] ||= '$(inherited) '
-        config.build_settings['HEADER_SEARCH_PATHS'] << '"$(SRCROOT)/Runner" ' # 搜索 cp 过去的本地文件
-        config.build_settings['HEADER_SEARCH_PATHS'] << '"$(SRCROOT)/Pods/Headers/Public/**" '
+         # 注入多重搜索路径，确保编译器能看到头文件
+         config.build_settings['HEADER_SEARCH_PATHS'] ||= '$(inherited) '
+         # 搜索 cp 到主目录的文件
+         config.build_settings['HEADER_SEARCH_PATHS'] << '"$(SRCROOT)/Runner" '
+         # 搜索 Pods 公共头文件根目录
+         config.build_settings['HEADER_SEARCH_PATHS'] << '"$(SRCROOT)/Pods/Headers/Public/**" '
 
-        # 如果动态找到了路径，则精准注入
-        if !plugin_header_dir.empty?
-          config.build_settings['HEADER_SEARCH_PATHS'] << "\"#{plugin_header_dir}\" "
-        end
+         # 如果动态找了插件路径，精准注入
+         if !plugin_header_dir.empty?
+           config.build_settings['HEADER_SEARCH_PATHS'] << "\"#{plugin_header_dir}\" "
+         end
 
-        # 额外覆盖阿里 SDK 可能存在的路径
-        config.build_settings['HEADER_SEARCH_PATHS'] << '"$(SRCROOT)/Pods/AliVCSDK_InteractiveLive/**" '
-      end
-    end
-  end
+         # 额外覆盖阿里 SDK 核心库可能存在的递归路径
+         config.build_settings['HEADER_SEARCH_PATHS'] << '"$(SRCROOT)/Pods/AliVCSDK_InteractiveLive/**" '
+       end
+     end
+   end
 
-  # 3. 实时补丁：强行修改 GeneratedPluginRegistrant.m
-  # 解决 "Module flutter_livepush_plugin not found" 报错
-  registrant_path = File.join(File.dirname(__FILE__), 'Runner', 'GeneratedPluginRegistrant.m')
-  if File.exist?(registrant_path)
-    puts "ACTION: Patching GeneratedPluginRegistrant.m to use #import instead of @import"
-    contents = File.read(registrant_path)
-    # 将 @import 替换为 #import，这样它会去 HEADER_SEARCH_PATHS 里找头文件
-    contents.gsub!(/@import\s+flutter_livepush_plugin;/, '#import "AlivcLivePusherPlugin.h"')
-    # 兜底：如果之前被改成了错误的尖括号形式，也改回引号
-    contents.gsub!(/#import\s+<flutter_livepush_plugin\/AlivcLivePusherPlugin\.h>/, '#import "AlivcLivePusherPlugin.h"')
-    File.open(registrant_path, 'w') { |file| file.puts contents }
-  end
-end
+   # 3. 实时强补：修正 GeneratedPluginRegistrant.m
+   # 该文件在编译中途由 Flutter 自动生成，我们需要把它强制改成引号导入
+   registrant_path = File.join(File.dirname(__FILE__), 'Runner', 'GeneratedPluginRegistrant.m')
+   if File.exist?(registrant_path)
+     puts "ACTION: Patching GeneratedPluginRegistrant.m to fix Module Not Found error"
+     contents = File.read(registrant_path)
+     # 将 @import 改为 #import "..."
+     contents.gsub!(/@import\s+flutter_livepush_plugin;/, '#import "AlivcLivePusherPlugin.h"')
+     # 将之前失败的尖括号导入也统一改为引号导入
+     contents.gsub!(/#import\s+<flutter_livepush_plugin\/AlivcLivePusherPlugin\.h>/, '#import "AlivcLivePusherPlugin.h"')
+     File.open(registrant_path, 'w') { |file| file.puts contents }
+     puts "PATCH APPLIED SUCCESSFULLY"
+   end
+ end

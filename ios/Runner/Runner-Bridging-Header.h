@@ -1,9 +1,8 @@
 #ifndef Runner_Bridging_Header_h
 #define Runner_Bridging_Header_h
 
+// 此时 AlivcLivePusherPlugin.h 已经在当前目录下
 #import "GeneratedPluginRegistrant.h"
-
-// 既然文件已经 cp 到了同一目录，这里直接引用即可
 #import "AlivcLivePusherPlugin.h"
 
 #endif
