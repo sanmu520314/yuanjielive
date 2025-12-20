@@ -1,18 +1,14 @@
-# 1. 第一行修改：直接引用 Generated.xcconfig 里的路径
-load File.expand_path(File.join('Flutter', 'generated_executable_build_libraries.rb'), __dir__) rescue nil
-
-# 引入 Flutter 脚本
+# 这里的路径必须是 Flutter 标准路径
 load File.expand_path(File.join('Flutter', 'podhelper.rb'), __dir__)
 
 platform :ios, '12.0'
 
 target 'Runner' do
-  # 阿里直播 SDK 必须使用静态链接
+  # 阿里直播 SDK 必须使用静态链接模式
   use_frameworks! :linkage => :static
 
   use_modular_headers!
 
-  # 这行会自动处理所有插件和 Flutter 框架
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
 end
 
@@ -22,9 +18,9 @@ post_install do |installer|
 
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
-      # 排除模拟器架构冲突
+      # 排除模拟器架构冲突 (M1/M2 Mac 编译环境必备)
       config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
-      # 阿里 SDK 兼容性设置
+      # 允许非模块化包含
       config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
     end
   end
