@@ -1,32 +1,29 @@
-# 1. 必须加载这个文件，解决你刚才遇到的 undefined method 报错
-load File.join(File.dirname(File.realpath(__FILE__)), 'Flutter', 'podhelper.rb')
+# ios/Podfile
 
-platform :ios, '13.0'
+platform :ios, '12.0'
+
+# Flutter prefers to disable input/output paths to work around a bug in Xcode 14.
+install! 'cocoapods', :disable_input_output_paths => true
+
+# CocoaPods analytics sends network stats synchronously affecting flutter build latency.
+ENV['COCOAPODS_DISABLE_STATS'] = 'true'
+
+project 'Runner.xcodeproj'
+
+flutter_application_path = '..'
+load File.join(flutter_application_path, '.flutter-plugins')
 
 target 'Runner' do
-  # 2. 关键：禁止 use_frameworks!，因为阿里 SDK 依赖 Legacy 链接方式
-  # 如果这里有 use_frameworks! 请务必删除或注释掉
-
+  use_frameworks!
   use_modular_headers!
 
-  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+  flutter_install_all_ios_pods(flutter_application_path)
 end
 
 post_install do |installer|
   installer.pods_project.targets.each do |target|
-    flutter_additional_ios_build_settings(target)
-
     target.build_configurations.each do |config|
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
-
-      # 3. 核心修复：解决阿里提到的 iOS + iOS Simulator 冲突
-      # 排除模拟器不支持的架构，并允许非模块化引用
-      config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
-      config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
-      config.build_settings['DEFINES_MODULE'] = 'YES'
-
-      # 针对旧版编译系统的兼容性补丁
-      config.build_settings['BUILD_LIBRARY_FOR_DISTRIBUTION'] = 'YES'
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
     end
   end
 end
