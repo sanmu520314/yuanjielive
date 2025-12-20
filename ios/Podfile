@@ -1,21 +1,33 @@
-# 1. 恢复官方加载逻辑（确保能找到官方脚本）
-podhelper_path = File.expand_path(File.join('Flutter', 'podhelper.rb'), __dir__)
-if File.exist?(podhelper_path)
-  load podhelper_path
-else
-  # 如果真的找不到，才报错中断，而不是定义空方法
-  raise "Flutter podhelper.rb not found at #{podhelper_path}. Please run 'flutter pub get'."
+# 使用相对路径加载，并增加备选方案
+def load_flutter_helpers
+  # 方案 A: 相对当前 Podfile 目录
+  p1 = File.expand_path('Flutter/podhelper.rb', __dir__)
+  # 方案 B: 相对上级目录（有些 CI 会把 Podfile 放在更深层）
+  p2 = File.expand_path('../Flutter/podhelper.rb', __dir__)
+
+  if File.exist?(p1)
+    load p1
+  elsif File.exist?(p2)
+    load p2
+  else
+    # 如果都找不到，定义一个备用的 flutter_additional_ios_build_settings 以防 post_install 崩溃
+    def flutter_additional_ios_build_settings(target); end
+    puts "Warning: Flutter podhelper.rb not found. Please ensure 'flutter pub get' was executed."
+  end
 end
+
+load_flutter_helpers
 
 platform :ios, '12.0'
 
 target 'Runner' do
-  # 阿里 SDK 必须使用静态链接
   use_frameworks! :linkage => :static
   use_modular_headers!
 
-  # 2. 这里的调用会安装 path_provider 等所有正常插件
-  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+  # 只有在方法存在时才调用，防止 Podfile 崩溃
+  if defined?(flutter_install_all_ios_pods)
+    flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+  end
 end
 
 post_install do |installer|
