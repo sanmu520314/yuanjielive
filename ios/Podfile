@@ -1,5 +1,5 @@
 source 'https://github.com/CocoaPods/Specs.git'
-source 'https://github.com/alibaba/alivc-specs.git'  # 这行是关键！
+source 'https://github.com/aliyun/aliyun-specs.git'
 
 podhelper_path = File.join(__dir__, 'Flutter', 'podhelper.rb')
 load podhelper_path if File.exist?(podhelper_path)
