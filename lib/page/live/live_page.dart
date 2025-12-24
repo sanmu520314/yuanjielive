@@ -1,17 +1,42 @@
 import 'dart:io';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_livepush_plugin/pusher/live_pusher_preview.dart';
 import 'package:get/get.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:yuanjielive/model/live_history_model.dart';
 import 'package:yuanjielive/widget/dashed_line_painter.dart';
 
 import 'live_controller.dart';
 
-class LivePage extends StatelessWidget {
+class LivePage extends StatefulWidget {
+
+  LivePage({super.key});
+
+  @override
+  State<LivePage> createState() => _LivePageState();
+}
+
+class _LivePageState extends State<LivePage> {
   final LiveController controller = Get.put(LiveController());
 
-   LivePage({super.key});
+  bool _keepScreenOn = true;
+  @override
+  void initState() {
+    super.initState();
+    // 进入页面时启用屏幕常亮
+    if (_keepScreenOn) {
+      WakelockPlus.enable();
+    }
+  }
+
+  @override
+  void dispose() {
+    // 离开页面时禁用屏幕常亮
+    WakelockPlus.disable();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,8 +48,9 @@ class LivePage extends StatelessWidget {
             return _buildLoginView();
           case 1:
             return _buildHistoryView();
+            // case 2:
+            return _buildPrepareView(context);
           case 2:
-            return _buildPrepareView();
           case 3:
             return _buildStreamingView(context);
           case 4:
@@ -159,7 +185,17 @@ class LivePage extends StatelessWidget {
   }
 
   // --- 3. 准备/直播中页面 (背景图) ---
-  Widget _buildPrepareView() {
+  Widget _buildPrepareView(BuildContext context) {
+    // // 1. 计算布局参数
+    // var width = MediaQuery
+    //     .of(context)
+    //     .size
+    //     .width;
+    // var height = MediaQuery
+    //     .of(context)
+    //     .size
+    //     .height;
+
     return Stack(
       children: [
         _buildImageBackground(),
@@ -170,7 +206,8 @@ class LivePage extends StatelessWidget {
               children: [
                 GestureDetector(
                     onTap: () => controller.currentState.value = 1,
-                    child: const Icon(Icons.arrow_back_ios, color: Colors.white)),
+                    child: const Icon(
+                        Icons.arrow_back_ios, color: Colors.white)),
                 const SizedBox(width: 0),
                 Image.asset(
                   "assets/images/logo.png",
@@ -244,7 +281,8 @@ class LivePage extends StatelessWidget {
               children: [
                 GestureDetector(
                     onTap: () => controller.currentState.value = 1,
-                    child: const Icon(Icons.arrow_back_ios, color: Colors.white)),
+                    child: const Icon(
+                        Icons.arrow_back_ios, color: Colors.white)),
                 const SizedBox(width: 0),
                 Image.asset(
                   "assets/images/logo.png",
@@ -260,11 +298,13 @@ class LivePage extends StatelessWidget {
                   bool isPushing = controller.isPushing.value;
                   return Visibility(
                     visible: isPushing, // 这里控制显示隐藏
-                    child: Text("已开播: "+controller.liveDuration.value,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        shadows: [Shadow(blurRadius: 2, color: Colors.black)])),
+                    child: Text("已开播: " + controller.liveDuration.value,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            shadows: [
+                              Shadow(blurRadius: 2, color: Colors.black)
+                            ])),
                   );
                 }),
                 const SizedBox(width: 5),
@@ -274,7 +314,8 @@ class LivePage extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size(0, 0),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 6),
                     backgroundColor: Colors.black26,
 
                     // 兼容旧版本背景
@@ -285,56 +326,51 @@ class LivePage extends StatelessWidget {
                         side: const BorderSide(color: Colors.white24)),
                     elevation: 0,
                   ),
-                  child: const Text("结束直播", style: TextStyle(fontSize: 10.6)),
+                  child: const Text(
+                      "结束直播", style: TextStyle(fontSize: 10.6)),
                 )
               ],
             )),
-        // --- 顶层：UI 控制层 ---
-        // Positioned(
-        //   top: 60,
-        //   left: 20,
-        //   right: 20,
-        //   child: Row(
-        //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        //     children: [
-        //       // 左侧：主播头像与 ID
-        //       Container(
-        //         padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        //         decoration: BoxDecoration(
-        //           color: Colors.black45,
-        //           borderRadius: BorderRadius.circular(20),
-        //         ),
-        //         child: Row(
-        //           children: [
-        //             CircleAvatar(
-        //                 radius: 12,
-        //                 backgroundColor: Colors.indigoAccent,
-        //                 child:
-        //                 Icon(Icons.person, size: 16, color: Colors.white)),
-        //             SizedBox(width: 8),
-        //             GestureDetector(
-        //                 onTap: () => controller.startPush(),
-        //                 child: Text("元界主播",
-        //                     style:
-        //                     TextStyle(color: Colors.white, fontSize: 14))),
-        //           ],
-        //         ),
-        //       ),
-        //
-        //
-        //     ],
-        //   ),
-        // ),
+
+
+        Obx(() {
+          bool isPrepaing = controller.currentState.value == 2;
+          return Positioned(
+            bottom: 220,
+            left: 10,
+            right: 10,
+            child: Visibility(
+              visible: isPrepaing, // 这里控制显示隐藏
+              child: _buildTextField("请输入设备码", isTranslucent: true,
+                  textController: controller.deviceCodeController),
+            ),
+          );
+        }),
+
+
+       Obx(() {
+         bool isPrepaing = controller.currentState.value == 2;
+          return  Positioned(
+          bottom: 140,
+          left: 30,
+          right: 30,
+          child: Visibility(
+            visible: isPrepaing, // 这里控制显示隐藏
+            child: _buildStartLiveButton(
+                "进入直播", () => controller.goLive()),
+          ));
+        }),
 
         Obx(() {
           bool isPushing = controller.isPushing.value;
+          bool isPrepaing = controller.currentState.value == 2;
           // Positioned 必须是 Stack 的直接子插件（或被 Obx 包裹的第一个插件）
           return Positioned(
             bottom: 100,
             left: 0,
             right: 0,
             child: Visibility(
-              visible: !isPushing, // 这里控制显示隐藏
+              visible: !isPushing && !isPrepaing, // 这里控制显示隐藏
               child: Center(
                 child: GestureDetector(
                   onTap: () => controller.reverseCamera(),
@@ -355,12 +391,13 @@ class LivePage extends StatelessWidget {
 
         Obx(() {
           bool isPushing = controller.isPushing.value;
+          bool isPrepaing = controller.currentState.value == 2;
           return Positioned(
               bottom: 40,
               left: 30,
               right: 30,
               child: Visibility(
-                visible: !isPushing, // 这里控制显示隐藏
+                visible: !isPushing && !isPrepaing, // 这里控制显示隐藏
                 child: _buildStartLiveButton(
                     "开始直播", () => controller.startPush()),
               ));
@@ -378,7 +415,8 @@ class LivePage extends StatelessWidget {
         children: [
           _buildLogo(),
           const SizedBox(height: 40),
-          const Text("直播结束", style: TextStyle(color: Colors.white, fontSize: 24)),
+          const Text(
+              "直播结束", style: TextStyle(color: Colors.white, fontSize: 24)),
           const SizedBox(height: 4),
           Text("时长: ${controller.liveDuration.value}",
               style: const TextStyle(color: Colors.white38)),
@@ -390,7 +428,6 @@ class LivePage extends StatelessWidget {
   }
 
   // --- 公用组件方法 ---
-
   BoxDecoration _backgroundDecoration() {
     return const BoxDecoration(
         image: DecorationImage(
@@ -433,7 +470,8 @@ class LivePage extends StatelessWidget {
             filled: true,
             // isDense: true,
             // 调整内边距，数值越小，输入框越矮
-            contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
+            contentPadding: const EdgeInsets.symmetric(
+                vertical: 10, horizontal: 15),
             fillColor: isTranslucent ? Colors.black45 : Colors.white10,
             border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -490,46 +528,56 @@ class LivePage extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Obx(() =>
-            GestureDetector(
-              onTap: () =>
-              controller.isAgreed.value = !controller.isAgreed.value,
-              child: Container(
-                width: 14,
-                height: 14,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    // 选中时边框也是白色，未选中时灰色
-                    color: controller.isAgreed.value
-                        ? Colors.white
-                        : Colors.white54,
-                    width: 1.0,
-                  ),
-                  // 关键点：选中时底色设为白色
-                  color: controller.isAgreed.value
-                      ? Colors.white
-                      : Colors.transparent,
+        // 1. 扩大复选框点击区域
+        GestureDetector(
+          onTap: () => controller.isAgreed.value = !controller.isAgreed.value,
+          behavior: HitTestBehavior.opaque,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+            child: Obx(() => Container(
+              width: 16,
+              height: 16,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: controller.isAgreed.value ? Colors.white : Colors.white54,
+                  width: 1.5,
                 ),
-                child: controller.isAgreed.value
-                    ? const Icon(
-                  Icons.check,
-                  size: 12,
-                  // 关键点：图标颜色设置为透明，或者设置为你背景图片的深蓝色
-                  // 如果你想看穿背景，这里设置为透明即可（Icon 默认不支持挖空，所以通常设为深色背景色）
-                  color: Color(0xFF1A1A2E),
-                )
-                    : null,
+                color: controller.isAgreed.value ? Colors.white : Colors.transparent,
               ),
+              child: controller.isAgreed.value
+                  ? const Icon(Icons.check, size: 12, color: Color(0xFF1A1A2E))
+                  : null,
             )),
-        const SizedBox(width: 8),
-        const Text(
-          "我已阅读并同意《服务协议》和《隐私政策》",
-          style: TextStyle(color: Colors.white54, fontSize: 11),
+          ),
+        ),
+        const SizedBox(width: 4),
+        // 2. 使用 RichText 实现部分文字高亮和点击
+        RichText(
+          text: TextSpan(
+            style: const TextStyle(color: Colors.white54, fontSize: 12),
+            children: [
+              const TextSpan(text: "我已阅读并同意"),
+              TextSpan(
+                text: "《服务协议》",
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  recognizer: controller.serviceRecognizer,
+              ),
+              const TextSpan(text: "和"),
+              TextSpan(
+                text: "《隐私政策》",
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  recognizer: controller.privacyRecognizer,
+              ),
+            ],
+          ),
         ),
       ],
     );
   }
+
+
+
 
   Widget _buildHistoryItem(LiveItem liveItem, int index, int totalCount) {
     return Container(

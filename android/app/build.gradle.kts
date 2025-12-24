@@ -41,6 +41,15 @@ android {
     }
     buildTypes {
         getByName("release") {
+            // 注意：Kotlin 脚本中属性名略有不同，且必须用双引号
+            isMinifyEnabled = false
+            isShrinkResources = false
+
+            // 注意：方法调用需要括号，且字符串用双引号
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
             // 使用之前创建的 config
             signingConfig = signingConfigs.getByName("config")
         }
